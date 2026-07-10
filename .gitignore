@@ -1,0 +1,45 @@
+# Root
+.idea/
+*.iml
+*.class
+*.jar
+*.war
+*.ear
+target/
+build/
+out/
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+*.local
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.sql.bak
+
+# IDE
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

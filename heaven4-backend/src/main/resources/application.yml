@@ -1,0 +1,119 @@
+spring:
+  application:
+    name: heaven4-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/heaven4
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      pool-name: Heaven4HikariPool
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    out-of-order: false
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+    time-zone: UTC
+
+  mvc:
+    pathmatch:
+      use-suffix-pattern: false
+
+server:
+  port: 8085
+  servlet:
+    context-path: /
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,flyway
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: when-authorized
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Heaven4 Enterprise
+    description: Intelligent Restaurant Operations Platform
+    version: 0.1.0
+    environment: ${spring.profiles.active:local}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+    try-it-out-enabled: true
+  show-actuator: false
+
+heaven4:
+  security:
+    jwt:
+      secret: heaven4-enterprise-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256
+      access-token-expiry-ms: 3600000       # 1 hour
+      refresh-token-expiry-ms: 604800000    # 7 days
+    otp:
+      expiry-minutes: 5
+      max-attempts: 3
+      length: 6
+    cors:
+      allowed-origins:
+        - http://localhost:5173
+        - http://localhost:3000
+
+  pagination:
+    default-page-size: 20
+    max-page-size: 100
+
+  logging:
+    include-request-body: false
+    include-response-body: false

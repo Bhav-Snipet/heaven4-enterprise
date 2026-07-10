@@ -1,0 +1,10 @@
+heaven4:
+  demo:
+    seed-data: true
+    restaurant-name: "Heaven4 Demo Club"
+    admin-email: "admin@heaven4demo.com"
+    admin-password: "Heaven4Demo@123"
+
+logging:
+  level:
+    com.heaven4: INFO
