@@ -1,21 +1,50 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
+import { LayoutDashboard, Menu, Users, Settings } from 'lucide-react';
 
 export default function AdminLayout() {
+  const navItems = [
+    { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { name: 'Menu & Catalog', path: '/admin/menu', icon: Menu },
+    { name: 'Table Management', path: '/admin/tables', icon: Users },
+    { name: 'System Settings', path: '/admin/features', icon: Settings },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex flex-col md:flex-row">
-      <aside className="w-full md:w-64 bg-slate-900 text-white shadow-soft hidden md:flex flex-col border-r border-slate-700">
-        <div className="p-4 border-b border-slate-800">
-          <h1 className="text-xl font-display font-bold text-heaven-400">Admin Control</h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col md:flex-row">
+      <aside className="w-full md:w-64 bg-slate-900 dark:bg-slate-950 text-white hidden md:flex flex-col border-r border-slate-800">
+        <div className="p-6 border-b border-slate-800">
+          <h1 className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-heaven-400 to-indigo-400">
+            Admin Workspace
+          </h1>
         </div>
-        {/* Admin navigation */}
+        <nav className="flex-1 p-4 space-y-2">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === '/admin'}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  isActive
+                    ? 'bg-heaven-600 text-white shadow-lg shadow-heaven-500/20'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`
+              }
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="font-medium">{item.name}</span>
+            </NavLink>
+          ))}
+        </nav>
       </aside>
       
-      <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-6 overflow-y-auto">
-        <header className="md:hidden flex justify-between items-center mb-4 bg-slate-900 text-white p-4 shadow rounded-lg">
-          <h1 className="text-lg font-bold">Admin Control</h1>
-          {/* Mobile menu toggle */}
+      <main className="flex-1 w-full max-h-screen overflow-y-auto">
+        <header className="md:hidden flex justify-between items-center bg-slate-900 text-white p-4 shadow">
+          <h1 className="text-lg font-bold">Admin Workspace</h1>
         </header>
-        <Outlet />
+        <div className="w-full">
+            <Outlet />
+        </div>
       </main>
     </div>
   );

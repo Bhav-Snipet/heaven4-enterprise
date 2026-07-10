@@ -14,6 +14,9 @@ CREATE TABLE users (
     last_login_at   TIMESTAMP WITH TIME ZONE,
     created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_by      VARCHAR(100) DEFAULT 'SYSTEM',
+    updated_by      VARCHAR(100) DEFAULT 'SYSTEM',
+    deleted_at      TIMESTAMP WITH TIME ZONE,
     version         BIGINT NOT NULL DEFAULT 0
 );
 
@@ -30,6 +33,11 @@ CREATE TABLE user_roles (
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
     granted_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     granted_by      VARCHAR(100) DEFAULT 'SYSTEM',
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_by      VARCHAR(100) DEFAULT 'SYSTEM',
+    updated_by      VARCHAR(100) DEFAULT 'SYSTEM',
+    deleted_at      TIMESTAMP WITH TIME ZONE,
     version         BIGINT NOT NULL DEFAULT 0,
     UNIQUE(user_id, role, workspace, branch_id)
 );
@@ -47,7 +55,12 @@ CREATE TABLE otp_verifications (
     expires_at      TIMESTAMP WITH TIME ZONE NOT NULL,
     attempts        INT NOT NULL DEFAULT 0,
     is_verified     BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_by      VARCHAR(100) DEFAULT 'SYSTEM',
+    updated_by      VARCHAR(100) DEFAULT 'SYSTEM',
+    deleted_at      TIMESTAMP WITH TIME ZONE,
+    version         BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_otp_phone ON otp_verifications(phone_number, is_verified);

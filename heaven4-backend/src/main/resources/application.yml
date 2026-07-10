@@ -107,7 +107,6 @@ heaven4:
       length: 6
     cors:
       allowed-origins: http://localhost:5173
-        - http://localhost:3000
 
   pagination:
     default-page-size: 20
