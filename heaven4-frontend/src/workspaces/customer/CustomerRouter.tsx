@@ -1,12 +1,17 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { CartProvider } from './context/CartContext';
+import CustomerMenuPage from './pages/CustomerMenuPage';
+import CustomerCartPage from './pages/CustomerCartPage';
 
 export default function CustomerRouter() {
   return (
-    <Routes>
-      <Route path="/" element={<div>Customer Home Page</div>} />
-      <Route path="/menu" element={<div>Menu Page</div>} />
-      <Route path="/cart" element={<div>Cart Page</div>} />
-      <Route path="/session" element={<div>Dining Session Page</div>} />
-    </Routes>
+    <CartProvider>
+      <Routes>
+        <Route path="/" element={<Navigate to="/customer/menu" replace />} />
+        <Route path="/menu" element={<CustomerMenuPage />} />
+        <Route path="/cart" element={<CustomerCartPage />} />
+        <Route path="/session" element={<div>Dining Session Page</div>} />
+      </Routes>
+    </CartProvider>
   );
 }

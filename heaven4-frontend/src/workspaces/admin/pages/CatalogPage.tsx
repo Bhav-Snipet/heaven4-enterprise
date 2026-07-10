@@ -287,6 +287,10 @@ export default function CatalogPage() {
                                     <label className="block text-sm font-medium mb-1">Description</label>
                                     <textarea id="cat-desc" defaultValue={editingCategory?.description} className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3" />
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Image URL (Optional)</label>
+                                    <input type="text" id="cat-image" defaultValue={editingCategory?.imageUrl} placeholder="https://..." className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3" />
+                                </div>
                             </div>
                             <div className="flex justify-end gap-3 mt-6">
                                 <button onClick={() => setCategoryModalOpen(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">Cancel</button>
@@ -294,11 +298,12 @@ export default function CatalogPage() {
                                     onClick={async () => {
                                         const name = (document.getElementById('cat-name') as HTMLInputElement).value;
                                         const description = (document.getElementById('cat-desc') as HTMLTextAreaElement).value;
+                                        const imageUrl = (document.getElementById('cat-image') as HTMLInputElement).value;
                                         try {
                                             if (editingCategory) {
-                                                await apiClient.put(`/catalog/categories/${editingCategory.id}`, { ...editingCategory, name, description });
+                                                await apiClient.put(`/catalog/categories/${editingCategory.id}`, { ...editingCategory, name, description, imageUrl });
                                             } else {
-                                                await apiClient.post('/catalog/categories', { name, description, sortOrder: categories.length, isActive: true });
+                                                await apiClient.post('/catalog/categories', { name, description, imageUrl, sortOrder: categories.length, isActive: true });
                                             }
                                             toast.success('Saved successfully');
                                             setCategoryModalOpen(false);
@@ -345,6 +350,10 @@ export default function CatalogPage() {
                                         <label className="text-sm font-medium">Vegetarian</label>
                                     </div>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">Image URL (Optional)</label>
+                                    <input type="text" id="item-image" defaultValue={editingItem?.imageUrl} placeholder="https://..." className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-xl p-3" />
+                                </div>
                             </div>
                             <div className="flex justify-end gap-3 mt-8">
                                 <button onClick={() => setItemModalOpen(false)} className="px-4 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">Cancel</button>
@@ -352,15 +361,16 @@ export default function CatalogPage() {
                                     onClick={async () => {
                                         const name = (document.getElementById('item-name') as HTMLInputElement).value;
                                         const description = (document.getElementById('item-desc') as HTMLTextAreaElement).value;
+                                        const imageUrl = (document.getElementById('item-image') as HTMLInputElement).value;
                                         const basePrice = parseFloat((document.getElementById('item-price') as HTMLInputElement).value || "0");
                                         const isVeg = (document.getElementById('item-veg') as HTMLInputElement).checked;
                                         try {
                                             if (editingItem) {
-                                                await apiClient.put(`/catalog/items/${editingItem.id}`, { ...editingItem, name, description, basePrice, isVeg });
+                                                await apiClient.put(`/catalog/items/${editingItem.id}`, { ...editingItem, name, description, imageUrl, basePrice, isVeg });
                                             } else {
                                                 await apiClient.post('/catalog/items', { 
                                                     categoryId: selectedCategoryIdForNewItem, 
-                                                    name, description, basePrice, isVeg,
+                                                    name, description, imageUrl, basePrice, isVeg,
                                                     isAvailable: true, spicinessLevel: 0, sortOrder: 0
                                                 });
                                             }
