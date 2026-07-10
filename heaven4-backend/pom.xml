@@ -20,7 +20,7 @@
     <description>Heaven4 Enterprise — Intelligent Restaurant Operations Platform</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok.version>1.18.36</lombok.version>
         <jjwt.version>0.12.6</jjwt.version>

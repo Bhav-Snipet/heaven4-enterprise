@@ -18,8 +18,7 @@ heaven4:
       access-token-expiry-ms: 3600000
       refresh-token-expiry-ms: 604800000
     cors:
-      allowed-origins:
-        - http://localhost:5173
+      allowed-origins: http://localhost:5173
 
 logging:
   level:

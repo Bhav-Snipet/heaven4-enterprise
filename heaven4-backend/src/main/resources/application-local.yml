@@ -15,6 +15,5 @@ logging:
 heaven4:
   security:
     cors:
-      allowed-origins:
-        - http://localhost:5173
+      allowed-origins: http://localhost:5173
         - http://localhost:3000
