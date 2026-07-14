@@ -7,11 +7,11 @@ export default function CustomerRouter() {
   return (
     <CartProvider>
       <Routes>
-        <Route path="/" element={<Navigate to="/customer/menu" replace />} />
-        <Route path="/menu" element={<CustomerMenuPage />} />
-        <Route path="/cart" element={<CustomerCartPage />} />
-        <Route path="/session" element={<div>Dining Session Page</div>} />
-      </Routes>
+      <Route index element={<Navigate to="/customer/menu" replace />} />
+      <Route path="menu" element={<CustomerMenuPage />} />
+      <Route path="cart" element={<CustomerCartPage />} />
+      <Route path="session" element={<div>Dining Session Page</div>} />
+    </Routes>
     </CartProvider>
   );
 }

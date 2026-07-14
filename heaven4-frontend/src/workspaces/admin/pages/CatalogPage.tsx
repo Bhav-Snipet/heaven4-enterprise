@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, Search, Settings, ArrowUpDown, ChevronDown, Check } from 'lucide-react';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/core/auth/AuthProvider';
 
 export interface Category {
     id: number;
@@ -28,7 +27,6 @@ export interface MenuItem {
 }
 
 export default function CatalogPage() {
-    const { user } = useAuth();
     const [categories, setCategories] = useState<Category[]>([]);
     const [itemsMap, setItemsMap] = useState<Record<number, MenuItem[]>>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -82,16 +80,7 @@ export default function CatalogPage() {
         setItemModalOpen(true);
     };
 
-    const deleteCategory = async (id: number) => {
-        if (!confirm("Are you sure? This will delete all items in this category!")) return;
-        try {
-            await apiClient.delete(`/catalog/categories/${id}`);
-            toast.success("Category deleted");
-            fetchCatalog();
-        } catch (e) {
-            toast.error("Delete failed");
-        }
-    };
+
 
     const deleteItem = async (id: number) => {
         if (!confirm("Are you sure you want to delete this item?")) return;

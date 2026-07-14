@@ -40,7 +40,7 @@ export default function CustomerMenuPage() {
             const flatItems = Object.values(res.data.items).flat() as MenuItem[];
             setItems(flatItems);
             
-            const firstCategoryWithItems = res.data.categories.find(c => res.data.items[c.id]?.length > 0);
+            const firstCategoryWithItems = res.data.categories.find((c: any) => res.data.items[c.id]?.length > 0);
             if (firstCategoryWithItems) setActiveCategory(firstCategoryWithItems.id);
             else if (res.data.categories.length > 0) setActiveCategory(res.data.categories[0].id);
         } catch (error) {

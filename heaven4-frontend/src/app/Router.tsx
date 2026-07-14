@@ -30,42 +30,42 @@ export function AppRouter() {
 
         {/* Protected Customer Routes */}
         <Route element={<ProtectedRoute allowedWorkspaces={['CUSTOMER', 'ADMIN', 'OWNER']} />}>
-          <Route path="/customer" element={<CustomerLayout />}>
+          <Route path="/customer/*" element={<CustomerLayout />}>
             <Route path="*" element={<CustomerRouter />} />
           </Route>
         </Route>
 
         {/* Protected Employee Routes */}
         <Route element={<ProtectedRoute allowedWorkspaces={['EMPLOYEE', 'ADMIN', 'OWNER']} />}>
-          <Route path="/employee" element={<EmployeeLayout />}>
+          <Route path="/employee/*" element={<EmployeeLayout />}>
             <Route path="*" element={<EmployeeRouter />} />
           </Route>
         </Route>
 
         {/* Protected Kitchen Routes */}
         <Route element={<ProtectedRoute allowedWorkspaces={['KITCHEN', 'ADMIN', 'OWNER']} />}>
-          <Route path="/kitchen" element={<KitchenLayout />}>
+          <Route path="/kitchen/*" element={<KitchenLayout />}>
             <Route path="*" element={<KitchenRouter />} />
           </Route>
         </Route>
 
         {/* Protected Manager Routes */}
         <Route element={<ProtectedRoute allowedWorkspaces={['MANAGER', 'ADMIN', 'OWNER']} />}>
-          <Route path="/manager" element={<ManagerLayout />}>
+          <Route path="/manager/*" element={<ManagerLayout />}>
             <Route path="*" element={<ManagerRouter />} />
           </Route>
         </Route>
 
         {/* Protected Admin Routes */}
         <Route element={<ProtectedRoute allowedWorkspaces={['ADMIN']} />}>
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin/*" element={<AdminLayout />}>
             <Route path="*" element={<AdminRouter />} />
           </Route>
         </Route>
 
         {/* Protected Owner Routes */}
         <Route element={<ProtectedRoute allowedWorkspaces={['OWNER']} />}>
-          <Route path="/owner" element={<OwnerLayout />}>
+          <Route path="/owner/*" element={<OwnerLayout />}>
             <Route path="*" element={<OwnerRouter />} />
           </Route>
         </Route>

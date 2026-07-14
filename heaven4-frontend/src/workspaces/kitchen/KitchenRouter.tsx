@@ -4,8 +4,8 @@ import KitchenDashboard from './pages/KitchenDashboard';
 export default function KitchenRouter() {
   return (
     <Routes>
-      <Route path="/" element={<KitchenDashboard />} />
-      <Route path="/queue" element={<div>Station Queue</div>} />
+      <Route index element={<KitchenDashboard />} />
+      <Route path="queue" element={<div>Station Queue</div>} />
     </Routes>
   );
 }

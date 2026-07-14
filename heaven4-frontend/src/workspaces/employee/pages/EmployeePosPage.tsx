@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Trash2, Search, Coffee } from 'lucide-react';
+import { ShoppingBag, Trash2, Search, Coffee } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 
