@@ -31,6 +31,7 @@ client.interceptors.response.use(
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
                 localStorage.removeItem('user_info');
+                window.dispatchEvent(new Event('auth-expired'));
                 // We'll let the AuthProvider handle the redirect by noticing the missing token
                 toast.error("Session expired. Please log in again.");
             } else if (error.response.status >= 500) {

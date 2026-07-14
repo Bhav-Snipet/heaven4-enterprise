@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, Plus, Trash2, Search, Coffee } from 'lucide-react';
-import { apiClient } from '@/core/api/client';
+import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 
 interface Category {
@@ -35,13 +35,11 @@ export default function EmployeePosPage() {
 
     const fetchCatalog = async () => {
         try {
-            const [catRes, itemRes] = await Promise.all([
-                apiClient.get('/catalog/categories'),
-                apiClient.get('/catalog/items')
-            ]);
-            setCategories(catRes.data);
-            setItems(itemRes.data);
-            if (catRes.data.length > 0) setActiveCategory(catRes.data[0].id);
+            const res = await apiClient.get('/catalog/full');
+            setCategories(res.data.categories);
+            const flatItems = Object.values(res.data.items).flat() as MenuItem[];
+            setItems(flatItems);
+            setActiveCategory(null); // Default to All Items
         } catch (error) {
             console.error('Failed to fetch POS catalog', error);
         }

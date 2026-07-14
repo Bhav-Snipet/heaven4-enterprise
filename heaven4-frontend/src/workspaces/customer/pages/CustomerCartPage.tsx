@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, CheckCircle2, Clock } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { apiClient } from '@/core/api/client';
+import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 
 export default function CustomerCartPage() {

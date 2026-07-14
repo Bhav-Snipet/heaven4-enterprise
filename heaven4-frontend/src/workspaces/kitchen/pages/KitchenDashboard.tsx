@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChefHat, CheckCircle2, Clock, Flame } from 'lucide-react';
-import { apiClient } from '@/core/api/client';
+import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 
 interface OrderItemDto {

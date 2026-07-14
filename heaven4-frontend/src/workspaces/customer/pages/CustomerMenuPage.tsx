@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Plus, Star, Leaf } from 'lucide-react';
-import { apiClient } from '@/core/api/client';
+import apiClient from '@/core/api/client';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,13 +35,14 @@ export default function CustomerMenuPage() {
 
     const fetchCatalog = async () => {
         try {
-            const [catRes, itemRes] = await Promise.all([
-                apiClient.get('/catalog/categories'),
-                apiClient.get('/catalog/items')
-            ]);
-            setCategories(catRes.data);
-            setItems(itemRes.data);
-            if (catRes.data.length > 0) setActiveCategory(catRes.data[0].id);
+            const res = await apiClient.get('/catalog/full');
+            setCategories(res.data.categories);
+            const flatItems = Object.values(res.data.items).flat() as MenuItem[];
+            setItems(flatItems);
+            
+            const firstCategoryWithItems = res.data.categories.find(c => res.data.items[c.id]?.length > 0);
+            if (firstCategoryWithItems) setActiveCategory(firstCategoryWithItems.id);
+            else if (res.data.categories.length > 0) setActiveCategory(res.data.categories[0].id);
         } catch (error) {
             console.error('Failed to fetch catalog', error);
         }

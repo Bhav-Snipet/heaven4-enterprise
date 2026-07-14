@@ -29,28 +29,28 @@ export function AppRouter() {
         <Route path="/auth/login" element={<LoginScreen />} />
 
         {/* Protected Customer Routes */}
-        <Route element={<ProtectedRoute allowedWorkspaces={['CUSTOMER']} />}>
+        <Route element={<ProtectedRoute allowedWorkspaces={['CUSTOMER', 'ADMIN', 'OWNER']} />}>
           <Route path="/customer" element={<CustomerLayout />}>
             <Route path="*" element={<CustomerRouter />} />
           </Route>
         </Route>
 
         {/* Protected Employee Routes */}
-        <Route element={<ProtectedRoute allowedWorkspaces={['EMPLOYEE']} />}>
+        <Route element={<ProtectedRoute allowedWorkspaces={['EMPLOYEE', 'ADMIN', 'OWNER']} />}>
           <Route path="/employee" element={<EmployeeLayout />}>
             <Route path="*" element={<EmployeeRouter />} />
           </Route>
         </Route>
 
         {/* Protected Kitchen Routes */}
-        <Route element={<ProtectedRoute allowedWorkspaces={['KITCHEN']} />}>
+        <Route element={<ProtectedRoute allowedWorkspaces={['KITCHEN', 'ADMIN', 'OWNER']} />}>
           <Route path="/kitchen" element={<KitchenLayout />}>
             <Route path="*" element={<KitchenRouter />} />
           </Route>
         </Route>
 
         {/* Protected Manager Routes */}
-        <Route element={<ProtectedRoute allowedWorkspaces={['MANAGER']} />}>
+        <Route element={<ProtectedRoute allowedWorkspaces={['MANAGER', 'ADMIN', 'OWNER']} />}>
           <Route path="/manager" element={<ManagerLayout />}>
             <Route path="*" element={<ManagerRouter />} />
           </Route>
