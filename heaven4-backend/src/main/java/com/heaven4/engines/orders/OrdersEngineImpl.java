@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ public class OrdersEngineImpl implements OrdersEngine {
     private final OrderRepository orderRepository;
     private final MenuItemRepository menuItemRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Override
     @Transactional
@@ -47,6 +49,7 @@ public class OrdersEngineImpl implements OrdersEngine {
         order.setCustomer(customer);
         order.setStatus(OrderStatus.PENDING);
         order.setBranchId(1L);
+        order.setTableNumber(request.getTableNumber());
 
         BigDecimal total = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
@@ -72,14 +75,19 @@ public class OrdersEngineImpl implements OrdersEngine {
         order.setTotalAmount(total);
 
         Order savedOrder = orderRepository.save(order);
-        return mapToDto(savedOrder);
+        OrderDto orderDto = mapToDto(savedOrder);
+        
+        // Broadcast new order to operations/kitchen
+        messagingTemplate.convertAndSend("/topic/operations", orderDto);
+        
+        return orderDto;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OrderDto> getActiveOrders() {
-        return orderRepository.findAll().stream()
-                .filter(o -> o.getStatus() == OrderStatus.PENDING || o.getStatus() == OrderStatus.PREPARING || o.getStatus() == OrderStatus.READY)
+        return orderRepository.findByStatusIn(List.of(OrderStatus.PENDING, OrderStatus.PREPARING, OrderStatus.READY))
+                .stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -99,7 +107,13 @@ public class OrdersEngineImpl implements OrdersEngine {
                 .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
         
         order.setStatus(newStatus);
-        return mapToDto(orderRepository.save(order));
+        Order savedOrder = orderRepository.save(order);
+        OrderDto orderDto = mapToDto(savedOrder);
+        
+        // Broadcast status update
+        messagingTemplate.convertAndSend("/topic/operations", orderDto);
+        
+        return orderDto;
     }
 
     private OrderDto mapToDto(Order order) {
@@ -123,6 +137,7 @@ public class OrdersEngineImpl implements OrdersEngine {
                 .status(order.getStatus())
                 .totalAmount(order.getTotalAmount())
                 .createdAt(order.getCreatedAt())
+                .tableNumber(order.getTableNumber())
                 .items(itemDtos)
                 .build();
     }

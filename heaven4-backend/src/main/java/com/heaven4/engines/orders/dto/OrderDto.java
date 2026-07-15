@@ -17,5 +17,6 @@ public class OrderDto {
     private OrderStatus status;
     private BigDecimal totalAmount;
     private Instant createdAt;
+    private String tableNumber;
     private List<OrderItemDto> items;
 }

@@ -10,7 +10,7 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blend-soft-light">
       <aside className="w-full md:w-64 bg-slate-900 dark:bg-slate-950 text-white hidden md:flex flex-col border-r border-slate-800">
         <div className="p-6 border-b border-slate-800">
           <h1 className="text-xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-heaven-400 to-indigo-400">

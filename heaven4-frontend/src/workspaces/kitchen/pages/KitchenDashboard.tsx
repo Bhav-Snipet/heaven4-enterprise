@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Clock, Flame } from 'lucide-react';
 import apiClient from '@/core/api/client';
+import { useOperationsWebSocket } from '@/core/hooks/useOperationsWebSocket';
 import toast from 'react-hot-toast';
 
 interface OrderItemDto {
@@ -23,10 +24,12 @@ export default function KitchenDashboard() {
 
     useEffect(() => {
         fetchOrders();
-        // Auto refresh every 10 seconds (Simulated WebSockets)
-        const interval = setInterval(fetchOrders, 10000);
-        return () => clearInterval(interval);
     }, []);
+
+    useOperationsWebSocket(() => {
+        // Refetch all orders on any update for consistency
+        fetchOrders();
+    });
 
     const fetchOrders = async () => {
         try {
@@ -66,14 +69,14 @@ export default function KitchenDashboard() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             key={order.id} 
-                            className="bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700"
+                            className="bg-slate-800/80 backdrop-blur-md rounded-xl p-5 shadow-lg border border-white/5 hover:border-white/20 transition-all"
                         >
-                            <div className="flex justify-between items-start mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">
+                            <div className="flex justify-between items-start mb-4 border-b border-white/10 pb-3">
                                 <div>
-                                    <h3 className="font-bold text-lg">Order #{order.id}</h3>
-                                    <p className="text-sm text-slate-500">{order.customerName}</p>
+                                    <h3 className="font-bold text-lg text-white">Order #{order.id}</h3>
+                                    <p className="text-sm text-slate-400">{order.customerName}</p>
                                 </div>
-                                <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400">
+                                <span className="text-xs font-mono font-medium bg-slate-900 px-2 py-1 rounded text-slate-300 border border-white/5">
                                     {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                 </span>
                             </div>
@@ -90,7 +93,7 @@ export default function KitchenDashboard() {
                             {nextStatus && (
                                 <button 
                                     onClick={() => updateStatus(order.id, nextStatus)}
-                                    className="w-full py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity"
+                                    className="w-full py-2.5 bg-white/5 border border-white/10 text-white rounded-xl font-bold text-sm hover:bg-white/10 transition-colors"
                                 >
                                     Move to {nextStatus}
                                 </button>
@@ -98,7 +101,7 @@ export default function KitchenDashboard() {
                             {!nextStatus && (
                                 <button 
                                     onClick={() => updateStatus(order.id, 'COMPLETED')}
-                                    className="w-full py-2 bg-green-500 text-white rounded-lg font-bold text-sm hover:bg-green-600 transition-colors"
+                                    className="w-full py-2.5 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl font-bold text-sm hover:bg-emerald-500/30 transition-colors"
                                 >
                                     Mark Completed
                                 </button>
@@ -111,18 +114,27 @@ export default function KitchenDashboard() {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col">
-            <header className="mb-6 flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold">Kitchen Display System</h1>
-                    <p className="text-slate-500">Live Order Tracking</p>
+        <div className="min-h-screen bg-slate-950 p-6 flex flex-col text-white bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blend-soft-light relative">
+            {/* Ambient Background Glow */}
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+            
+            <header className="mb-8 flex justify-between items-center relative z-10">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-red-600 flex items-center justify-center shadow-glow">
+                        <Flame className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-display font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Kitchen Display</h1>
+                        <p className="text-slate-400">Live Order Tracking & Execution</p>
+                    </div>
                 </div>
             </header>
 
-            <div className="flex-1 flex gap-6 overflow-hidden">
-                {renderColumn('Incoming', <Clock className="w-6 h-6 text-amber-500" />, pendingOrders, 'PREPARING', 'bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30')}
-                {renderColumn('Cooking', <Flame className="w-6 h-6 text-orange-500" />, preparingOrders, 'READY', 'bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30')}
-                {renderColumn('Ready for Pickup', <CheckCircle2 className="w-6 h-6 text-green-500" />, readyOrders, null, 'bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30')}
+            <div className="flex-1 flex flex-col md:flex-row gap-6 overflow-hidden relative z-10">
+                {renderColumn('Incoming', <Clock className="w-6 h-6 text-amber-400" />, pendingOrders, 'PREPARING', 'bg-slate-900/60 backdrop-blur-xl border border-white/10')}
+                {renderColumn('Cooking', <Flame className="w-6 h-6 text-orange-400" />, preparingOrders, 'READY', 'bg-slate-900/60 backdrop-blur-xl border border-white/10')}
+                {renderColumn('Ready', <CheckCircle2 className="w-6 h-6 text-emerald-400" />, readyOrders, null, 'bg-slate-900/60 backdrop-blur-xl border border-white/10')}
             </div>
         </div>
     );

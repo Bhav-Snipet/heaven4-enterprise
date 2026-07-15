@@ -11,7 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "orders")
+@Table(name = "orders", indexes = {
+    @Index(name = "idx_orders_customer", columnList = "customer_id"),
+    @Index(name = "idx_orders_status", columnList = "status"),
+    @Index(name = "idx_orders_branch", columnList = "branch_id")
+})
 @Getter
 @Setter
 public class Order extends BaseEntity {
@@ -22,6 +26,9 @@ public class Order extends BaseEntity {
 
     @Column(name = "branch_id")
     private Long branchId;
+
+    @Column(name = "table_number", length = 20)
+    private String tableNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)

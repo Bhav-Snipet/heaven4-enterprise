@@ -1,12 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
-import EmployeePosPage from './pages/EmployeePosPage';
+import EmployeeDashboard from './pages/EmployeeDashboard';
 
 export default function EmployeeRouter() {
   return (
     <Routes>
-      <Route index element={<EmployeePosPage />} />
-      <Route path="tables" element={<div>Assigned Tables</div>} />
-      <Route path="tasks" element={<div>Tasks</div>} />
+      <Route path="/" element={<EmployeeDashboard />} />
     </Routes>
   );
 }

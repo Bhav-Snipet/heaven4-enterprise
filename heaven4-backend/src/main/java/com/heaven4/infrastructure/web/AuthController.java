@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -22,38 +24,43 @@ public class AuthController {
 
     @PostMapping("/request-otp")
     @Operation(summary = "Request OTP", description = "Generates and sends an OTP to the given phone number")
-    public ApiResponse<String> requestOtp(@RequestBody OtpRequest request) {
+    public ApiResponse<String> requestOtp(@Valid @RequestBody OtpRequest request) {
         String result = authEngine.sendOtp(request.getPhoneNumber());
         return ApiResponse.success("OTP sent", result);
     }
 
     @PostMapping("/verify-otp")
     @Operation(summary = "Verify OTP", description = "Verifies the OTP and returns JWT tokens")
-    public ApiResponse<AuthResult> verifyOtp(@RequestBody VerifyRequest request) {
+    public ApiResponse<AuthResult> verifyOtp(@Valid @RequestBody VerifyRequest request) {
         AuthResult result = authEngine.verifyOtp(request.getPhoneNumber(), request.getOtpCode());
         return ApiResponse.success("Authentication successful", result);
     }
 
     @PostMapping("/refresh")
     @Operation(summary = "Refresh Token", description = "Generates a new access token using a refresh token")
-    public ApiResponse<AuthResult> refresh(@RequestBody RefreshRequest request) {
+    public ApiResponse<AuthResult> refresh(@Valid @RequestBody RefreshRequest request) {
         AuthResult result = authEngine.refreshToken(request.getRefreshToken());
         return ApiResponse.success("Token refreshed", result);
     }
 
     @Data
     public static class OtpRequest {
+        @NotBlank(message = "Phone number is required")
         private String phoneNumber;
     }
 
     @Data
     public static class VerifyRequest {
+        @NotBlank(message = "Phone number is required")
         private String phoneNumber;
+        
+        @NotBlank(message = "OTP code is required")
         private String otpCode;
     }
 
     @Data
     public static class RefreshRequest {
+        @NotBlank(message = "Refresh token is required")
         private String refreshToken;
     }
 }

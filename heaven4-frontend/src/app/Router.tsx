@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { CartProvider } from '@/workspaces/customer/context/CartContext';
 
 // Layouts
 import CustomerLayout from '@/workspaces/customer/layouts/CustomerLayout';
@@ -18,10 +19,12 @@ import OwnerRouter from '@/workspaces/owner/OwnerRouter';
 
 import LoginScreen from '@/workspaces/auth/LoginScreen';
 import { ProtectedRoute } from '@/core/auth/ProtectedRoute';
+import { DeveloperRoleSwitcher } from '@/core/auth/DeveloperRoleSwitcher';
 
 export function AppRouter() {
   return (
     <Router>
+      <DeveloperRoleSwitcher />
       <Routes>
         <Route path="/" element={<Navigate to="/customer" replace />} />
         
@@ -30,7 +33,7 @@ export function AppRouter() {
 
         {/* Protected Customer Routes */}
         <Route element={<ProtectedRoute allowedWorkspaces={['CUSTOMER', 'ADMIN', 'OWNER']} />}>
-          <Route path="/customer/*" element={<CustomerLayout />}>
+          <Route path="/customer/*" element={<CartProvider><CustomerLayout /></CartProvider>}>
             <Route path="*" element={<CustomerRouter />} />
           </Route>
         </Route>

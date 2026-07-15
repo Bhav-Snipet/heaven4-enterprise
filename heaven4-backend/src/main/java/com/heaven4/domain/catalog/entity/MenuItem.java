@@ -3,13 +3,16 @@ package com.heaven4.domain.catalog.entity;
 import com.heaven4.core.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "menu_items")
+@Table(name = "menu_items", indexes = {
+    @Index(name = "idx_menu_items_category", columnList = "category_id")
+})
 @Getter
 @Setter
 public class MenuItem extends BaseEntity {

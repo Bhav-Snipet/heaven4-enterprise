@@ -3,6 +3,7 @@ package com.heaven4.domain.identity.entity;
 import com.heaven4.core.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +11,9 @@ import lombok.Setter;
 import java.time.Instant;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_users_phone", columnList = "phone_number")
+})
 @Getter
 @Setter
 public class User extends BaseEntity {

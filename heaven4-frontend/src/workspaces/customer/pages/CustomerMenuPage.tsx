@@ -26,6 +26,7 @@ export default function CustomerMenuPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [items, setItems] = useState<MenuItem[]>([]);
     const [activeCategory, setActiveCategory] = useState<number | null>(null);
+    const [error, setError] = useState<string | null>(null);
     const { addToCart, items: cartItems } = useCart();
     const navigate = useNavigate();
 
@@ -35,6 +36,7 @@ export default function CustomerMenuPage() {
 
     const fetchCatalog = async () => {
         try {
+            setError(null);
             const res = await apiClient.get('/catalog/full');
             setCategories(res.data.categories);
             const flatItems = Object.values(res.data.items).flat() as MenuItem[];
@@ -43,8 +45,9 @@ export default function CustomerMenuPage() {
             const firstCategoryWithItems = res.data.categories.find((c: any) => res.data.items[c.id]?.length > 0);
             if (firstCategoryWithItems) setActiveCategory(firstCategoryWithItems.id);
             else if (res.data.categories.length > 0) setActiveCategory(res.data.categories[0].id);
-        } catch (error) {
-            console.error('Failed to fetch catalog', error);
+        } catch (err: any) {
+            console.error('Failed to fetch catalog', err);
+            setError("Failed to load menu. Please ensure you are logged in and connected.");
         }
     };
 
@@ -75,23 +78,29 @@ export default function CustomerMenuPage() {
             </div>
 
             {/* Categories Scroll */}
-            <div className="overflow-x-auto p-4 hide-scrollbar">
-                <div className="flex gap-3">
-                    {categories.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setActiveCategory(cat.id)}
-                            className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all ${
-                                activeCategory === cat.id 
-                                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
-                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                            }`}
-                        >
-                            {cat.name}
-                        </button>
-                    ))}
+            {error ? (
+                <div className="p-8 text-center text-red-500 font-semibold bg-red-50 mx-4 rounded-xl border border-red-100">
+                    {error}
                 </div>
-            </div>
+            ) : (
+                <div className="overflow-x-auto p-4 hide-scrollbar">
+                    <div className="flex gap-3">
+                        {categories.map(cat => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveCategory(cat.id)}
+                                className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-semibold transition-all ${
+                                    activeCategory === cat.id 
+                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
+                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                                }`}
+                            >
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Items Grid */}
             <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -127,9 +136,9 @@ export default function CustomerMenuPage() {
                                         quantity: 1,
                                         imageUrl: item.imageUrl
                                     })}
-                                    className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 transition-colors rounded-full"
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all rounded-xl shadow-lg shadow-blue-500/30 flex items-center gap-2 text-sm"
                                 >
-                                    <Plus className="w-5 h-5" />
+                                    <Plus className="w-4 h-4" /> Add to Cart
                                 </button>
                             </div>
                         </div>

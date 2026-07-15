@@ -10,6 +10,15 @@ export default function CustomerCartPage() {
     const navigate = useNavigate();
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState(false);
+    const [tableNumber, setTableNumber] = useState('');
+    
+    // Phase 6: Billing & Rewards
+    const [tipPercentage, setTipPercentage] = useState(15);
+    const taxRate = 0.08;
+    const taxAmount = totalAmount * taxRate;
+    const tipAmount = totalAmount * (tipPercentage / 100);
+    const finalTotal = totalAmount + taxAmount + tipAmount;
+    const pointsEarned = Math.floor(finalTotal) * 10;
 
     const handlePlaceOrder = async () => {
         if (items.length === 0) return;
@@ -19,14 +28,23 @@ export default function CustomerCartPage() {
             // Simulated Payment Step
             await new Promise(resolve => setTimeout(resolve, 800)); // Simulate processing
             
-            const payload = {
+            const orderPayload = {
+                tableNumber: tableNumber || "Takeout",
                 items: items.map(i => ({
                     menuItemId: i.menuItemId,
                     quantity: i.quantity
                 }))
             };
             
-            await apiClient.post('/orders', payload);
+            // 1. Create the Order
+            const orderRes = await apiClient.post('/orders', orderPayload);
+            const orderId = orderRes.data.id;
+            
+            // 2. Process Checkout via Billing Engine
+            await apiClient.post(`/billing/checkout/${orderId}`, {
+                tipAmount: tipAmount.toFixed(2),
+                paymentMethod: 'CARD'
+            });
             
             toast.success('Payment successful! Order placed.');
             clearCart();
@@ -56,12 +74,20 @@ export default function CustomerCartPage() {
                     </div>
                 </div>
 
-                <button 
-                    onClick={() => navigate('/customer/menu')}
-                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all"
-                >
-                    Back to Menu
-                </button>
+                <div className="flex gap-4 w-full max-w-md">
+                    <button 
+                        onClick={() => navigate('/customer/menu')}
+                        className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-all"
+                    >
+                        Menu
+                    </button>
+                    <button 
+                        onClick={() => navigate('/customer/rewards')}
+                        className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all"
+                    >
+                        View Rewards
+                    </button>
+                </div>
             </div>
         );
     }
@@ -124,9 +150,71 @@ export default function CustomerCartPage() {
 
             {items.length > 0 && (
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-                    <div className="flex justify-between items-end mb-4 px-2">
-                        <span className="text-slate-500 font-medium">Total Amount</span>
-                        <span className="text-2xl font-bold">${totalAmount.toFixed(2)}</span>
+                    
+                    <div className="mb-4">
+                        <p className="text-sm font-semibold text-slate-500 mb-2">Table Number (Optional for Takeout)</p>
+                        <input 
+                            type="text" 
+                            placeholder="e.g. 5 or Takeout"
+                            value={tableNumber}
+                            onChange={(e) => setTableNumber(e.target.value)}
+                            className="w-full p-3 rounded-lg bg-slate-100 dark:bg-slate-800 border-none font-semibold focus:ring-2 focus:ring-blue-500 transition-all"
+                        />
+                    </div>
+
+                    <div className="mb-4">
+                        <p className="text-sm font-semibold text-slate-500 mb-2">Add Tip</p>
+                        <div className="flex gap-2">
+                            {[10, 15, 20].map(pct => (
+                                <button
+                                    key={pct}
+                                    onClick={() => setTipPercentage(pct)}
+                                    className={`flex-1 py-2 rounded-lg font-bold border-2 transition-all ${
+                                        tipPercentage === pct 
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' 
+                                            : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300'
+                                    }`}
+                                >
+                                    {pct}%
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setTipPercentage(0)}
+                                className={`flex-1 py-2 rounded-lg font-bold border-2 transition-all ${
+                                    tipPercentage === 0 
+                                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' 
+                                        : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300'
+                                }`}
+                            >
+                                No Tip
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 mb-4 text-sm px-2">
+                        <div className="flex justify-between text-slate-500">
+                            <span>Subtotal</span>
+                            <span>${totalAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-500">
+                            <span>Tax (8%)</span>
+                            <span>${taxAmount.toFixed(2)}</span>
+                        </div>
+                        {tipAmount > 0 && (
+                            <div className="flex justify-between text-slate-500">
+                                <span>Tip ({tipPercentage}%)</span>
+                                <span>${tipAmount.toFixed(2)}</span>
+                            </div>
+                        )}
+                        <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-end">
+                            <span className="text-slate-700 dark:text-slate-300 font-medium">Total</span>
+                            <span className="text-2xl font-bold">${finalTotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-xl p-3 mb-4 flex justify-between items-center">
+                        <span className="text-amber-700 dark:text-amber-400 font-semibold text-sm">✨ Points to earn</span>
+                        <span className="font-bold text-amber-600 dark:text-amber-300">+{pointsEarned} pts</span>
                     </div>
                     <button 
                         onClick={handlePlaceOrder}
@@ -138,6 +226,13 @@ export default function CustomerCartPage() {
                         ) : (
                             'Pay & Place Order'
                         )}
+                    </button>
+                    
+                    <button 
+                        onClick={() => navigate('/customer/menu')}
+                        className="w-full mt-3 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-all flex justify-center items-center gap-2"
+                    >
+                        Order More Items
                     </button>
                 </div>
             )}

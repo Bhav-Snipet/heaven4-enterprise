@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
@@ -22,10 +23,10 @@ public class OrdersController {
     private final OrdersEngine ordersEngine;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'EMPLOYEE', 'MANAGER', 'ADMIN', 'OWNER')")
     public ResponseEntity<OrderDto> placeOrder(
             @AuthenticationPrincipal HeavenUserDetails userDetails,
-            @RequestBody CreateOrderRequest request) {
+            @Valid @RequestBody CreateOrderRequest request) {
         OrderDto order = ordersEngine.placeOrder(userDetails.getUserId(), request);
         return ResponseEntity.ok(order);
     }
@@ -38,7 +39,7 @@ public class OrdersController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasAnyRole('KITCHEN', 'MANAGER', 'ADMIN', 'OWNER')")
+    @PreAuthorize("hasAnyRole('KITCHEN', 'MANAGER', 'ADMIN', 'OWNER', 'EMPLOYEE')")
     public ResponseEntity<List<OrderDto>> getActiveOrders() {
         return ResponseEntity.ok(ordersEngine.getActiveOrders());
     }

@@ -69,6 +69,13 @@ public class ApiResponse<T> {
     }
 
     /**
+     * Creates an error response with a message, error code, and data payload.
+     */
+    public static <T> ApiResponse<T> error(String message, String errorCode, T data) {
+        return new ApiResponse<>(false, null, data, message, errorCode);
+    }
+
+    /**
      * Creates an error response with only a message.
      */
     public static <T> ApiResponse<T> error(String message) {

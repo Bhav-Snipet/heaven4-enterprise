@@ -11,7 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "order_items")
+@Table(name = "order_items", indexes = {
+    @Index(name = "idx_order_items_order", columnList = "order_id"),
+    @Index(name = "idx_order_items_menu_item", columnList = "menu_item_id")
+})
 @Getter
 @Setter
 public class OrderItem extends BaseEntity {

@@ -47,10 +47,14 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, message);
         });
         log.warn("Validation failed: {}", errors);
+        ApiResponse<Map<String, String>> response = ApiResponse.error(
+                "Validation failed. Please check the provided data.",
+                ErrorCode.VALIDATION_FAILED,
+                errors);
+        
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Validation failed. Please check the provided data.",
-                        ErrorCode.VALIDATION_FAILED));
+                .body(response);
     }
 
     /**
