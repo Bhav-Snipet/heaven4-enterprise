@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Coffee, X, ShoppingBag, DollarSign, CheckCircle2, User, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Coffee, X, ShoppingBag, DollarSign, CheckCircle2, User, Clock, AlertTriangle, Crown } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useOperationsWebSocket } from '@/core/hooks/useOperationsWebSocket';
 import { useAuth } from '@/core/auth/AuthProvider';
@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 interface MenuItem { id: number; name: string; basePrice: number; categoryId: number; isAvailable: boolean; }
 interface Category { id: number; name: string; }
 interface OrderItem { menuItemName: string; quantity: number; unitPrice: number; subtotal: number; }
-interface TableData { id: string; status: 'FREE' | 'OCCUPIED'; orderTotal: number; orderId?: number; items?: OrderItem[]; tableNumber?: string; }
+interface TableData { id: string; status: 'FREE' | 'OCCUPIED'; orderTotal: number; orderId?: number; items?: OrderItem[]; tableNumber?: string; membershipTier?: string; }
 interface Complaint { id: number; type: string; description: string; status: string; orderId?: number; tableNumber?: string; }
 
 type ModalType = 'add' | 'close' | 'walkin' | 'complaint' | null;
@@ -47,7 +47,8 @@ export default function EmployeeDashboard() {
                         orderTotal: order.totalAmount || 0,
                         orderId: order.id,
                         items: order.items || [],
-                        tableNumber: order.tableNumber
+                        tableNumber: order.tableNumber,
+                        membershipTier: order.membershipTier
                     });
                 }
             });
@@ -239,8 +240,11 @@ export default function EmployeeDashboard() {
                                     </button>
                                 )}
                                 {table.status === 'OCCUPIED' && !tableComplaint && (
-                                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs font-bold">
+                                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
                                         Occupied
+                                        {table.membershipTier && table.membershipTier !== 'BRONZE' && (
+                                            <Crown className={`w-3 h-3 ${table.membershipTier === 'DIAMOND' ? 'text-indigo-500' : table.membershipTier === 'GOLD' ? 'text-yellow-500' : 'text-slate-400'}`} />
+                                        )}
                                     </div>
                                 )}
                             </div>

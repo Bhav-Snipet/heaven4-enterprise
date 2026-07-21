@@ -258,6 +258,8 @@ public class OrdersEngineImpl implements OrdersEngine {
                         .build())
                 .collect(Collectors.toList());
 
+        String tier = order.getCustomer() != null ? membershipEngine.getCurrentTier(order.getCustomer().getId()) : null;
+
         return OrderDto.builder()
                 .id(order.getId())
                 .customerId(order.getCustomer() != null ? order.getCustomer().getId() : null)
@@ -269,6 +271,7 @@ public class OrdersEngineImpl implements OrdersEngine {
                 .discountAmount(order.getDiscountAmount())
                 .createdAt(order.getCreatedAt())
                 .tableNumber(order.getTableNumber())
+                .membershipTier(tier)
                 .items(itemDtos)
                 .build();
     }

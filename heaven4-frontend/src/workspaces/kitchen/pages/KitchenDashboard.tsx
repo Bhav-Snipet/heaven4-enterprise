@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Clock, Flame, History, AlertTriangle, User, LogOut, TrendingUp } from 'lucide-react';
+import { CheckCircle2, Clock, Flame, History, AlertTriangle, User, LogOut, TrendingUp, Crown } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useOperationsWebSocket } from '@/core/hooks/useOperationsWebSocket';
 import { useAuth } from '@/core/auth/AuthProvider';
@@ -18,6 +18,7 @@ interface OrderDto {
     createdAt: string;
     items: OrderItemDto[];
     totalAmount: number;
+    membershipTier?: string;
 }
 interface Complaint { id: number; type: string; description: string; status: string; createdAt: string; orderId?: number; tableNumber?: string; }
 
@@ -109,8 +110,21 @@ export default function KitchenDashboard() {
         } catch { toast.error('Failed to update status'); }
     };
 
-    const pendingOrders = orders.filter(o => o.status === 'PENDING');
-    const preparingOrders = orders.filter(o => o.status === 'PREPARING');
+    const getTierWeight = (tier?: string) => {
+        if (tier === 'DIAMOND') return 3;
+        if (tier === 'GOLD') return 2;
+        if (tier === 'SILVER') return 1;
+        return 0; // BRONZE or undefined
+    };
+
+    const pendingOrders = orders
+        .filter(o => o.status === 'PENDING')
+        .sort((a, b) => getTierWeight(b.membershipTier) - getTierWeight(a.membershipTier) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    
+    const preparingOrders = orders
+        .filter(o => o.status === 'PREPARING')
+        .sort((a, b) => getTierWeight(b.membershipTier) - getTierWeight(a.membershipTier) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    
     const readyOrders = orders.filter(o => o.status === 'READY');
 
     const renderOrderCard = (order: OrderDto, nextStatus: string | null) => {
@@ -137,6 +151,15 @@ export default function KitchenDashboard() {
                             >
                                 <AlertTriangle className="w-4 h-4" />
                             </button>
+                        )}
+                        {order.membershipTier && order.membershipTier !== 'BRONZE' && (
+                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                                 order.membershipTier === 'DIAMOND' ? 'bg-indigo-900/40 text-indigo-300' :
+                                 order.membershipTier === 'GOLD' ? 'bg-yellow-900/40 text-yellow-300' :
+                                 'bg-slate-700 text-slate-300'
+                             }`}>
+                                 <Crown className="w-3 h-3" /> {order.membershipTier}
+                             </span>
                         )}
                     </h3>
                     <p className="text-sm text-slate-400">Table {order.tableNumber || '—'} · {order.customerName || 'Walk-in'}</p>

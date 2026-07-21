@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, AlertCircle, Clock, ShoppingCart, X, CheckCircle2, MessageSquare } from 'lucide-react';
+import { Users, AlertCircle, Clock, ShoppingCart, X, CheckCircle2, MessageSquare, Crown } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useOperationsWebSocket } from '@/core/hooks/useOperationsWebSocket';
 import toast from 'react-hot-toast';
@@ -14,6 +14,7 @@ interface OrderDto {
     items: { id: number; menuItemName: string; quantity: number; unitPrice?: number; subtotal?: number }[];
     createdAt: string;
     customerName: string;
+    membershipTier?: string;
 }
 
 interface Complaint {
@@ -41,6 +42,13 @@ export default function ManagerDashboard() {
     const [discountInput, setDiscountInput] = useState("");
     const [staffList, setStaffList] = useState<any[]>([]);
 
+    const getTierWeight = (tier?: string) => {
+        if (tier === 'DIAMOND') return 3;
+        if (tier === 'GOLD') return 2;
+        if (tier === 'SILVER') return 1;
+        return 0;
+    };
+
     const fetchData = async () => {
         try {
             const [opsRes, ordersRes, complaintsRes, staffRes] = await Promise.all([
@@ -50,7 +58,11 @@ export default function ManagerDashboard() {
                 apiClient.get('/admin/users').catch(() => ({ data: [] }))
             ]);
             setStats(opsRes.data);
-            setRecentOrders(ordersRes.data.slice(0, 5));
+            const sortedOrders = [...ordersRes.data].sort((a, b) => 
+                getTierWeight(b.membershipTier) - getTierWeight(a.membershipTier) || 
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            setRecentOrders(sortedOrders);
             setComplaints(complaintsRes.data);
             
             // Filter to only staff roles
@@ -164,7 +176,18 @@ export default function ManagerDashboard() {
                                             #{order.id}
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-slate-200">Table {order.tableNumber || '—'}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-semibold text-slate-200">Table {order.tableNumber || '—'}</p>
+                                                {order.membershipTier && order.membershipTier !== 'BRONZE' && (
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                                                        order.membershipTier === 'DIAMOND' ? 'bg-indigo-900/40 text-indigo-300' :
+                                                        order.membershipTier === 'GOLD' ? 'bg-yellow-900/40 text-yellow-300' :
+                                                        'bg-slate-700 text-slate-300'
+                                                    }`}>
+                                                        <Crown className="w-3 h-3" /> {order.membershipTier}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-sm text-slate-500">{order.items?.length || 0} items • {order.status}</p>
                                         </div>
                                     </div>
@@ -229,7 +252,18 @@ export default function ManagerDashboard() {
                                 {modal === 'orders' && recentOrders.map(order => (
                                     <div key={order.id} className="p-4 bg-white/5 rounded-2xl border border-white/5">
                                         <div className="flex justify-between mb-2">
-                                            <span className="font-bold">Order #{order.id} — Table {order.tableNumber || '—'}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold">Order #{order.id} — Table {order.tableNumber || '—'}</span>
+                                                {order.membershipTier && order.membershipTier !== 'BRONZE' && (
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${
+                                                        order.membershipTier === 'DIAMOND' ? 'bg-indigo-900/40 text-indigo-300' :
+                                                        order.membershipTier === 'GOLD' ? 'bg-yellow-900/40 text-yellow-300' :
+                                                        'bg-slate-700 text-slate-300'
+                                                    }`}>
+                                                        <Crown className="w-3 h-3" /> {order.membershipTier}
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${order.status === 'PENDING' ? 'bg-amber-500/20 text-amber-400' : order.status === 'PREPARING' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}`}>
                                                 {order.status}
                                             </span>

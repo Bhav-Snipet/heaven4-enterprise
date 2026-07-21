@@ -19,5 +19,6 @@ public class OrderDto {
     private BigDecimal discountAmount;
     private Instant createdAt;
     private String tableNumber;
+    private String membershipTier;
     private List<OrderItemDto> items;
 }
