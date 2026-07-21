@@ -18,6 +18,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,6 +29,7 @@ public class AuthenticationEngineImpl implements AuthenticationEngine {
     private final UserRoleRepository userRoleRepository;
     private final OtpVerificationRepository otpRepository;
     private final JwtProvider jwtProvider;
+    private final PasswordEncoder passwordEncoder;
 
     private static final int MAX_OTP_ATTEMPTS = 3;
     private static final int OTP_EXPIRY_MINUTES = 5;
@@ -78,6 +81,19 @@ public class AuthenticationEngineImpl implements AuthenticationEngine {
     @Override
     public AuthResult authenticateWithGoogle(String googleIdToken) {
         throw new UnsupportedOperationException("Google OAuth not implemented yet");
+    }
+
+    @Override
+    @Transactional
+    public AuthResult loginWithPassword(String identifier, String password) {
+        User user = userRepository.findByPhoneNumber(identifier)
+                .orElseThrow(() -> new BusinessException("Invalid credentials"));
+
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new BusinessException("Invalid credentials");
+        }
+
+        return processAuthentication(identifier);
     }
 
     private AuthResult processAuthentication(String phoneNumber) {

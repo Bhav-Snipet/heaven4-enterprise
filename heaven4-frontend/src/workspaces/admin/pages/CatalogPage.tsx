@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Flame } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 
@@ -93,6 +93,46 @@ export default function CatalogPage() {
         }
     };
 
+    const deleteCategory = async (id: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm("Delete this entire category and all its items? This cannot be undone.")) return;
+        try {
+            await apiClient.delete(`/catalog/categories/${id}`);
+            toast.success('Category deleted');
+            setActiveTab(null);
+            fetchCatalog();
+        } catch {
+            toast.error('Failed to delete category');
+        }
+    };
+
+    const toggleItemActive = async (itemId: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            const res = await apiClient.put(`/admin/catalog/items/${itemId}/toggle-active`);
+            toast.success(`${res.data.name} is now ${res.data.isAvailable ? 'Available' : 'Unavailable'}`);
+            fetchCatalog();
+        } catch {
+            toast.error('Failed to toggle availability');
+        }
+    };
+
+    const [kitchenLoadMode, setKitchenLoadMode] = useState(false);
+    const [klmLoading, setKlmLoading] = useState(false);
+    const handleKitchenLoadMode = async () => {
+        setKlmLoading(true);
+        try {
+            const res = await apiClient.put('/admin/kitchen-load-mode', { enabled: !kitchenLoadMode });
+            setKitchenLoadMode(!kitchenLoadMode);
+            toast.success(res.data.message);
+            fetchCatalog();
+        } catch {
+            toast.error('Failed to toggle Kitchen Load Mode');
+        } finally {
+            setKlmLoading(false);
+        }
+    };
+
     return (
         <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen">
             {/* Header section with glassmorphism */}
@@ -107,7 +147,19 @@ export default function CatalogPage() {
                     </h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Manage categories, items, and pricing globally.</p>
                 </div>
-                <div className="mt-4 md:mt-0 flex gap-3">
+                <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
+                    <button 
+                        onClick={handleKitchenLoadMode}
+                        disabled={klmLoading}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg ${
+                            kitchenLoadMode 
+                                ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-500/30' 
+                                : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                        }`}
+                    >
+                        <Flame className="w-5 h-5" />
+                        Kitchen Load Mode {kitchenLoadMode ? 'ON' : 'OFF'}
+                    </button>
                     <button 
                         onClick={openNewCategoryModal}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-heaven-600 hover:bg-heaven-500 text-white font-medium transition-all shadow-lg shadow-heaven-500/30"
@@ -163,6 +215,12 @@ export default function CatalogPage() {
                                     >
                                         <Edit2 className="w-4 h-4" />
                                     </button>
+                                    <button 
+                                        onClick={(e) => deleteCategory(cat.id, e)}
+                                        className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </motion.div>
                         ))}
@@ -216,6 +274,17 @@ export default function CatalogPage() {
                                                         <h3 className="font-bold text-lg">{item.name}</h3>
                                                     </div>
                                                     <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={(e) => toggleItemActive(item.id, e)}
+                                                            className={`p-2 rounded-xl transition-colors backdrop-blur-sm shadow-sm ${
+                                                                item.isAvailable 
+                                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600'
+                                                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-500 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600'
+                                                            }`}
+                                                            title={item.isAvailable ? 'Deactivate item' : 'Activate item'}
+                                                        >
+                                                            {item.isAvailable ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                                                        </button>
                                                         <button 
                                                             onClick={() => openEditItemModal(item)}
                                                             className="p-2 bg-white/50 dark:bg-white/10 hover:bg-white dark:hover:bg-white/20 rounded-xl transition-colors backdrop-blur-sm shadow-sm text-slate-600 dark:text-slate-300"

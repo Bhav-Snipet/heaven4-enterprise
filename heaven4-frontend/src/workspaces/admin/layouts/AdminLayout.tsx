@@ -1,11 +1,15 @@
-import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Menu, Users, Settings } from 'lucide-react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Menu, Users, Settings, Table2, LogOut } from 'lucide-react';
+import { useAuth } from '@/core/auth/AuthProvider';
 
 export default function AdminLayout() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Menu & Catalog', path: '/admin/menu', icon: Menu },
-    { name: 'Table Management', path: '/admin/tables', icon: Users },
+    { name: 'User Management', path: '/admin/users', icon: Users },
+    { name: 'Table Management', path: '/admin/tables', icon: Table2 },
     { name: 'System Settings', path: '/admin/features', icon: Settings },
   ];
 
@@ -36,6 +40,13 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="p-4 border-t border-slate-800">
+          <button onClick={() => { logout(); navigate('/auth/login'); }}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-slate-400 hover:text-white hover:bg-red-900/30 transition-all">
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Logout</span>
+          </button>
+        </div>
       </aside>
       
       <main className="flex-1 w-full max-h-screen overflow-y-auto">

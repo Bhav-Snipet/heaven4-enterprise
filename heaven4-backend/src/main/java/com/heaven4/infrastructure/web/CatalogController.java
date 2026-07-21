@@ -2,6 +2,7 @@ package com.heaven4.infrastructure.web;
 
 import com.heaven4.domain.catalog.entity.Category;
 import com.heaven4.domain.catalog.entity.MenuItem;
+import com.heaven4.domain.catalog.repository.MenuItemRepository;
 import com.heaven4.engines.catalog.CatalogEngine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class CatalogController {
 
     private final CatalogEngine catalogEngine;
+    private final MenuItemRepository menuItemRepository;
 
     // --- PUBLIC ENDPOINTS (Customer, Kiosk, etc) ---
 
@@ -62,5 +64,14 @@ public class CatalogController {
     public ResponseEntity<Void> deleteMenuItem(@PathVariable Long id) {
         catalogEngine.deleteMenuItem(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/items/{id}/image")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'OWNER')")
+    public ResponseEntity<MenuItem> updateItemImage(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        MenuItem item = menuItemRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+        item.setImageUrl(body.get("imageUrl"));
+        return ResponseEntity.ok(menuItemRepository.save(item));
     }
 }

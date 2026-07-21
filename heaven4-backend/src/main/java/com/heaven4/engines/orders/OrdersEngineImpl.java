@@ -116,6 +116,121 @@ public class OrdersEngineImpl implements OrdersEngine {
         return orderDto;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public OrderDto getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        return mapToDto(order);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderDto> getAllOrders() {
+        return orderRepository.findAll().stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public OrderDto addItemsToOrder(Long orderId, CreateOrderRequest request) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        BigDecimal additionalTotal = BigDecimal.ZERO;
+        for (CreateOrderItemRequest itemReq : request.getItems()) {
+            MenuItem menuItem = menuItemRepository.findById(itemReq.getMenuItemId())
+                    .orElseThrow(() -> new ResourceNotFoundException("MenuItem", itemReq.getMenuItemId()));
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setMenuItem(menuItem);
+            orderItem.setQuantity(itemReq.getQuantity());
+            orderItem.setUnitPrice(menuItem.getBasePrice());
+            BigDecimal subtotal = menuItem.getBasePrice().multiply(BigDecimal.valueOf(itemReq.getQuantity()));
+            orderItem.setSubtotal(subtotal);
+            order.getItems().add(orderItem);
+            additionalTotal = additionalTotal.add(subtotal);
+        }
+        // Recalculate total from scratch
+        BigDecimal newTotal = order.getItems().stream()
+                .map(OrderItem::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+        if (order.getDiscountAmount() != null) {
+            newTotal = newTotal.subtract(order.getDiscountAmount());
+        }
+
+        if (newTotal.compareTo(BigDecimal.ZERO) < 0) {
+            newTotal = BigDecimal.ZERO;
+        }
+        order.setTotalAmount(newTotal);
+        
+        Order savedOrder = orderRepository.save(order);
+        OrderDto orderDto = mapToDto(savedOrder);
+        messagingTemplate.convertAndSend("/topic/operations", orderDto);
+        return orderDto;
+    }
+
+    @Override
+    @Transactional
+    public OrderDto applyDiscount(Long orderId, BigDecimal discountAmount) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        order.setDiscountAmount(discountAmount);
+        
+        // Recalculate total
+        BigDecimal newTotal = order.getItems().stream()
+                .map(OrderItem::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .subtract(discountAmount);
+        
+        if (newTotal.compareTo(BigDecimal.ZERO) < 0) {
+            newTotal = BigDecimal.ZERO;
+        }
+        order.setTotalAmount(newTotal);
+
+        Order savedOrder = orderRepository.save(order);
+        OrderDto orderDto = mapToDto(savedOrder);
+        messagingTemplate.convertAndSend("/topic/operations", orderDto);
+        return orderDto;
+    }
+
+    @Override
+    @Transactional
+    public OrderDto removeItemFromOrder(Long orderId, Long orderItemId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+        
+        OrderItem itemToRemove = order.getItems().stream()
+                .filter(item -> item.getId().equals(orderItemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("OrderItem", orderItemId));
+
+        order.getItems().remove(itemToRemove);
+
+        // Recalculate total
+        BigDecimal newTotal = order.getItems().stream()
+                .map(OrderItem::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+        if (order.getDiscountAmount() != null) {
+            newTotal = newTotal.subtract(order.getDiscountAmount());
+        }
+
+        if (newTotal.compareTo(BigDecimal.ZERO) < 0) {
+            newTotal = BigDecimal.ZERO;
+        }
+        order.setTotalAmount(newTotal);
+
+        Order savedOrder = orderRepository.save(order);
+        OrderDto orderDto = mapToDto(savedOrder);
+        messagingTemplate.convertAndSend("/topic/operations", orderDto);
+        return orderDto;
+    }
+
     private OrderDto mapToDto(Order order) {
         List<OrderItemDto> itemDtos = order.getItems().stream()
                 .map(item -> OrderItemDto.builder()
@@ -136,6 +251,7 @@ public class OrdersEngineImpl implements OrdersEngine {
                     : "Guest")
                 .status(order.getStatus())
                 .totalAmount(order.getTotalAmount())
+                .discountAmount(order.getDiscountAmount())
                 .createdAt(order.getCreatedAt())
                 .tableNumber(order.getTableNumber())
                 .items(itemDtos)

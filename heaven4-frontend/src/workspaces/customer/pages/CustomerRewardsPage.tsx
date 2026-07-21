@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Award, Gift, Star, Clock } from 'lucide-react';
+import { ArrowLeft, Award, Gift, Star, ShoppingBag, Clock } from 'lucide-react';
 import apiClient from '@/core/api/client';
+import { useCart } from '../context/CartContext';
+import toast from 'react-hot-toast';
 
 export default function CustomerRewardsPage() {
     const navigate = useNavigate();
     const [profile, setProfile] = useState<{ pointsBalance: number, tier: string } | null>(null);
-
     const [error, setError] = useState<string | null>(null);
+    const [rewardHistory, setRewardHistory] = useState<{ item: string; points: number; time: string }[]>([]);
+
+    useEffect(() => {
+        const hist = JSON.parse(localStorage.getItem('rewardHistory') || '[]');
+        setRewardHistory(hist);
+    }, []);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -38,6 +45,33 @@ export default function CustomerRewardsPage() {
         if (profile.tier === 'BRONZE') return 'SILVER';
         if (profile.tier === 'SILVER') return 'GOLD';
         return 'MAX';
+    };
+
+    const { addToCart } = useCart();
+
+    const redeemReward = (itemName: string, pointsCost: number) => {
+        if (!profile || profile.pointsBalance < pointsCost) {
+            toast.error("Not enough points for this reward.");
+            return;
+        }
+        const newBalance = profile.pointsBalance - pointsCost;
+        setProfile({ ...profile, pointsBalance: newBalance });
+        
+        // Add reward item to cart with isReward flag — this is filtered from backend order payload
+        addToCart({
+            menuItemId: -(Date.now()), // Negative ID to avoid collision with real items
+            name: `🎁 Free ${itemName}`,
+            price: 0.00,
+            quantity: 1,
+            isReward: true
+        });
+
+        // Save redemption history to localStorage
+        const history = JSON.parse(localStorage.getItem('rewardHistory') || '[]');
+        history.unshift({ item: itemName, points: pointsCost, time: new Date().toISOString() });
+        localStorage.setItem('rewardHistory', JSON.stringify(history.slice(0, 20)));
+        
+        toast.success(`🎉 Redeemed ${itemName}! Added to your cart for FREE.`);
     };
 
     if (error) {
@@ -132,23 +166,108 @@ export default function CustomerRewardsPage() {
                     </div>
                 </div>
                 
-                {/* Recent Activity */}
-                <h3 className="text-xl font-bold mt-8 mb-4">Recent Activity</h3>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-2">
-                    {/* Placeholder for history since we didn't hook up history API yet */}
-                    <div className="p-4 flex items-center justify-between border-b border-white/5 last:border-0">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
-                                <Clock className="w-5 h-5 text-blue-400" />
+                {/* Rewards Catalog */}
+                <h3 className="text-xl font-bold mt-8 mb-4">Rewards Catalog</h3>
+                <div className="space-y-4">
+                    {/* Item 1 */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                                🍟
                             </div>
                             <div>
-                                <p className="font-medium text-sm">Account Created</p>
-                                <p className="text-xs text-slate-400">Welcome to Heaven Rewards!</p>
+                                <h4 className="font-bold">Free Classic Fries</h4>
+                                <p className="text-sm text-slate-400">500 pts</p>
                             </div>
                         </div>
-                        <span className="font-bold text-emerald-400">+0 pts</span>
+                        <button 
+                            onClick={() => redeemReward("Classic Fries", 500)}
+                            disabled={profile.pointsBalance < 500}
+                            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                                profile.pointsBalance >= 500 
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/30' 
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            }`}
+                        >
+                            Redeem
+                        </button>
+                    </div>
+
+                    {/* Item 2 */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                                🍔
+                            </div>
+                            <div>
+                                <h4 className="font-bold">Free Signature Burger</h4>
+                                <p className="text-sm text-slate-400">1500 pts</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => redeemReward("Signature Burger", 1500)}
+                            disabled={profile.pointsBalance < 1500}
+                            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                                profile.pointsBalance >= 1500 
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/30' 
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            }`}
+                        >
+                            Redeem
+                        </button>
+                    </div>
+
+                    {/* Item 3 */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center">
+                                🥤
+                            </div>
+                            <div>
+                                <h4 className="font-bold">Free Milkshake</h4>
+                                <p className="text-sm text-slate-400">800 pts</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => redeemReward("Milkshake", 800)}
+                            disabled={profile.pointsBalance < 800}
+                            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                                profile.pointsBalance >= 800 
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/30' 
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            }`}
+                        >
+                            Redeem
+                        </button>
                     </div>
                 </div>
+
+                <button 
+                    onClick={() => navigate('/customer/cart')}
+                    className="w-full mt-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all border border-white/10"
+                >
+                    <ShoppingBag className="w-5 h-5" /> Go to Cart
+                </button>
+
+                {/* Redemption History */}
+                {rewardHistory.length > 0 && (
+                    <div className="mt-8">
+                        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                            <Clock className="w-5 h-5 text-blue-400" /> Redemption History
+                        </h3>
+                        <div className="space-y-2">
+                            {rewardHistory.map((h, i) => (
+                                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 flex justify-between items-center">
+                                    <div>
+                                        <p className="font-semibold text-sm">{h.item}</p>
+                                        <p className="text-xs text-slate-400">{new Date(h.time).toLocaleString()}</p>
+                                    </div>
+                                    <span className="text-red-400 font-bold text-sm">-{h.points} pts</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

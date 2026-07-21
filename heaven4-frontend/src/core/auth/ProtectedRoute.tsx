@@ -11,8 +11,8 @@ export function ProtectedRoute({ allowedRoles, allowedWorkspaces }: ProtectedRou
 
     if (isLoading) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <div className="flex h-screen w-full items-center justify-center bg-slate-950">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-heaven-500 border-t-transparent" />
             </div>
         );
     }
@@ -23,11 +23,10 @@ export function ProtectedRoute({ allowedRoles, allowedWorkspaces }: ProtectedRou
 
     // Role verification
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-        // Fallback to customer or unauthorized page
-        return <Navigate to="/customer" replace />;
+        return <Navigate to={`/${user.workspace.toLowerCase()}`} replace />;
     }
 
-    // Workspace verification
+    // Workspace verification - DEVELOPER can access any route that includes 'DEVELOPER' in allowedWorkspaces
     if (allowedWorkspaces && !allowedWorkspaces.includes(user.workspace)) {
         return <Navigate to={`/${user.workspace.toLowerCase()}`} replace />;
     }

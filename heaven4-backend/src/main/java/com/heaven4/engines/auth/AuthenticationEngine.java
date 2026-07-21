@@ -25,4 +25,7 @@ public interface AuthenticationEngine {
 
     /** Checks if a session is still valid. */
     boolean isSessionValid(Long userId, String sessionId);
+
+    /** Authenticates a staff member using ID (phone/email) and password */
+    AuthResult loginWithPassword(String identifier, String password);
 }

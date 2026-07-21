@@ -43,6 +43,13 @@ public class AuthController {
         return ApiResponse.success("Token refreshed", result);
     }
 
+    @PostMapping("/login/password")
+    @Operation(summary = "Login with Password", description = "Login using identifier and password")
+    public ApiResponse<AuthResult> loginWithPassword(@Valid @RequestBody PasswordLoginRequest request) {
+        AuthResult result = authEngine.loginWithPassword(request.getIdentifier(), request.getPassword());
+        return ApiResponse.success("Authentication successful", result);
+    }
+
     @Data
     public static class OtpRequest {
         @NotBlank(message = "Phone number is required")
@@ -62,5 +69,14 @@ public class AuthController {
     public static class RefreshRequest {
         @NotBlank(message = "Refresh token is required")
         private String refreshToken;
+    }
+
+    @Data
+    public static class PasswordLoginRequest {
+        @NotBlank(message = "Identifier is required")
+        private String identifier;
+        
+        @NotBlank(message = "Password is required")
+        private String password;
     }
 }

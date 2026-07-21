@@ -1,5 +1,5 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, Award, ShoppingBag, LogOut, User } from 'lucide-react';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
+import { Home, Award, ShoppingBag, LogOut, User, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
@@ -15,9 +15,10 @@ export default function CustomerLayout() {
   };
 
   const navItems = [
-    { to: '/customer', icon: Home, label: 'Menu', end: true },
+    { to: '/customer/menu', icon: Home, label: 'Menu', end: true },
     { to: '/customer/rewards', icon: Award, label: 'Rewards' },
     { to: '/customer/cart', icon: ShoppingBag, label: 'Cart', badge: items.length > 0 ? items.length : null },
+    { to: '/customer/complaint', icon: MessageSquare, label: 'Help' },
   ];
 
   return (
@@ -25,14 +26,14 @@ export default function CustomerLayout() {
       {/* Premium Header */}
       <header className="bg-slate-900/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <Link to="/customer/menu" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-heaven-400 to-indigo-600 flex items-center justify-center shadow-glow">
               <span className="font-bold text-white text-xl leading-none">H</span>
             </div>
             <h1 className="text-xl font-display font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
               Heaven4
             </h1>
-          </div>
+          </Link>
           
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">

@@ -16,6 +16,7 @@ public class OrderDto {
     private String customerName;
     private OrderStatus status;
     private BigDecimal totalAmount;
+    private BigDecimal discountAmount;
     private Instant createdAt;
     private String tableNumber;
     private List<OrderItemDto> items;

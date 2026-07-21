@@ -35,4 +35,7 @@ public class User extends BaseEntity {
 
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
 }

@@ -64,6 +64,7 @@ export default function LoginScreen() {
         }
     };
 
+
     return (
         <div className="min-h-screen w-full flex items-center justify-center bg-[#030712] relative overflow-hidden">
             {/* Background Animations */}
@@ -186,6 +187,13 @@ export default function LoginScreen() {
                             </motion.form>
                         )}
                     </AnimatePresence>
+                </div>
+                
+                <div className="mt-8 text-center">
+                    <p className="text-slate-500 text-xs flex justify-center gap-4">
+                        <a href="/staff-login" className="hover:text-white transition-colors">Staff Access</a>
+                        <a href="/developer" className="hover:text-white transition-colors">Developer Portal</a>
+                    </p>
                 </div>
             </div>
         </div>

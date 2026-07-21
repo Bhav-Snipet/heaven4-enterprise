@@ -11,4 +11,9 @@ public interface OrdersEngine {
     List<OrderDto> getActiveOrders();
     List<OrderDto> getCustomerOrders(Long customerId);
     OrderDto updateOrderStatus(Long orderId, OrderStatus newStatus);
+    OrderDto getOrderById(Long orderId);
+    List<OrderDto> getAllOrders();
+    OrderDto addItemsToOrder(Long orderId, CreateOrderRequest request);
+    OrderDto applyDiscount(Long orderId, java.math.BigDecimal discountAmount);
+    OrderDto removeItemFromOrder(Long orderId, Long orderItemId);
 }

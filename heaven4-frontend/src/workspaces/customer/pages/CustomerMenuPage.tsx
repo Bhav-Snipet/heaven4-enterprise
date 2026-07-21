@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Plus, Star, Leaf } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useCart } from '../context/CartContext';
@@ -64,17 +64,25 @@ export default function CustomerMenuPage() {
                     </h1>
                     <p className="text-sm text-slate-500">Tap to order instantly</p>
                 </div>
-                <button 
-                    onClick={() => navigate('/customer/cart')}
-                    className="relative p-3 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow"
-                >
-                    <ShoppingBag className="w-5 h-5 text-slate-700 dark:text-slate-300" />
-                    {cartCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                            {cartCount}
-                        </span>
-                    )}
-                </button>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => navigate('/customer/order-status')}
+                        className="relative px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full shadow-sm font-semibold text-sm transition-all flex items-center gap-2"
+                    >
+                        Track Order
+                    </button>
+                    <button 
+                        onClick={() => navigate('/customer/cart')}
+                        className="relative p-3 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-md transition-shadow"
+                    >
+                        <ShoppingBag className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+                        {cartCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
             </div>
 
             {/* Categories Scroll */}
@@ -121,13 +129,13 @@ export default function CustomerMenuPage() {
                         <div className="flex-1 flex flex-col justify-between">
                             <div>
                                 <div className="flex justify-between items-start mb-1">
-                                    <h3 className="font-bold text-lg leading-tight">{item.name}</h3>
+                                    <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white">{item.name}</h3>
                                     {item.isVeg && <Leaf className="w-4 h-4 text-green-500 flex-shrink-0" />}
                                 </div>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{item.description}</p>
                             </div>
                             <div className="flex justify-between items-center mt-2">
-                                <span className="font-bold text-lg">${item.basePrice.toFixed(2)}</span>
+                                <span className="font-bold text-lg text-slate-900 dark:text-white">${item.basePrice.toFixed(2)}</span>
                                 <button 
                                     onClick={() => addToCart({
                                         menuItemId: item.id,
@@ -150,6 +158,34 @@ export default function CustomerMenuPage() {
                     No items found in this category.
                 </div>
             )}
+
+            {/* Floating Cart Button (FAB) */}
+            <AnimatePresence>
+                {cartCount > 0 && (
+                    <motion.div 
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-50"
+                    >
+                        <button
+                            onClick={() => navigate('/customer/cart')}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl p-4 shadow-2xl shadow-blue-600/40 flex items-center justify-between transition-all"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/20 px-3 py-1 rounded-lg font-bold text-sm">
+                                    {cartCount}
+                                </div>
+                                <span className="font-semibold tracking-wide">View Cart</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold">${cartItems.reduce((acc, i) => acc + (i.price * i.quantity), 0).toFixed(2)}</span>
+                                <ShoppingBag className="w-5 h-5" />
+                            </div>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

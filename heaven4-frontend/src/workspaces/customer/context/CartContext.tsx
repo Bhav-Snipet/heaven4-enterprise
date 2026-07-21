@@ -6,6 +6,7 @@ export interface CartItem {
     price: number;
     quantity: number;
     imageUrl?: string;
+    isReward?: boolean; // Flag for reward redemptions — never sent to backend
 }
 
 interface CartContextType {

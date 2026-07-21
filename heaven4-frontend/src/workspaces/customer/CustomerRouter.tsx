@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import CustomerMenuPage from './pages/CustomerMenuPage';
 import CustomerCartPage from './pages/CustomerCartPage';
 import CustomerRewardsPage from './pages/CustomerRewardsPage';
+import CustomerComplaintPage from './pages/CustomerComplaintPage';
+import CustomerOrderStatusPage from './pages/CustomerOrderStatusPage';
 
 export default function CustomerRouter() {
   return (
@@ -11,6 +13,8 @@ export default function CustomerRouter() {
       <Route path="menu" element={<CustomerMenuPage />} />
       <Route path="cart" element={<CustomerCartPage />} />
       <Route path="rewards" element={<CustomerRewardsPage />} />
+      <Route path="complaint" element={<CustomerComplaintPage />} />
+      <Route path="order-status" element={<CustomerOrderStatusPage />} />
       <Route path="session" element={<div>Dining Session Page</div>} />
     </Routes>
   );

@@ -52,4 +52,40 @@ public class OrdersController {
         OrderStatus status = OrderStatus.valueOf(body.get("status").toUpperCase());
         return ResponseEntity.ok(ordersEngine.updateOrderStatus(orderId, status));
     }
+
+    @GetMapping("/{orderId}")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'KITCHEN', 'EMPLOYEE', 'MANAGER', 'ADMIN', 'OWNER')")
+    public ResponseEntity<OrderDto> getOrderById(@PathVariable Long orderId) {
+        return ResponseEntity.ok(ordersEngine.getOrderById(orderId));
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasAnyRole('KITCHEN', 'MANAGER', 'ADMIN', 'OWNER')")
+    public ResponseEntity<List<OrderDto>> getAllOrders() {
+        return ResponseEntity.ok(ordersEngine.getAllOrders());
+    }
+
+    @PostMapping("/{orderId}/add-items")
+    @PreAuthorize("hasAnyRole('EMPLOYEE', 'MANAGER', 'ADMIN', 'OWNER')")
+    public ResponseEntity<OrderDto> addItemsToOrder(
+            @PathVariable Long orderId,
+            @RequestBody CreateOrderRequest request) {
+        return ResponseEntity.ok(ordersEngine.addItemsToOrder(orderId, request));
+    }
+
+    @PutMapping("/{orderId}/discount")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'OWNER')")
+    public ResponseEntity<OrderDto> applyDiscount(
+            @PathVariable Long orderId,
+            @RequestBody Map<String, java.math.BigDecimal> body) {
+        return ResponseEntity.ok(ordersEngine.applyDiscount(orderId, body.get("discountAmount")));
+    }
+
+    @DeleteMapping("/{orderId}/items/{orderItemId}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'OWNER')")
+    public ResponseEntity<OrderDto> removeItemFromOrder(
+            @PathVariable Long orderId,
+            @PathVariable Long orderItemId) {
+        return ResponseEntity.ok(ordersEngine.removeItemFromOrder(orderId, orderItemId));
+    }
 }
