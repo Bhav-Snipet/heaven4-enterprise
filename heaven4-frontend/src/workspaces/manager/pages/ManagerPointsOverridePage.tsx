@@ -18,7 +18,6 @@ export default function EmployeePointsOverridePage() {
             // Mocking user lookup for now
             const res = await apiClient.get('/admin/users');
             const found = res.data.find((u: any) => 
-                u.roles.some((r: any) => r.role === 'CUSTOMER') && 
                 u.phoneNumber === searchId
             );
             if (found) {

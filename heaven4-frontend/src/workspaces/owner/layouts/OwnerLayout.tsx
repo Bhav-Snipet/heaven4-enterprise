@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingBag, BarChart3, Settings, LogOut, Hexagon } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingBag, BarChart3, Settings, LogOut, Hexagon, DollarSign } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 
 export default function OwnerLayout() {
@@ -15,6 +15,7 @@ export default function OwnerLayout() {
     { to: '/owner', icon: LayoutDashboard, label: 'Executive Dashboard', end: true },
     { to: '/owner/orders', icon: ShoppingBag, label: 'Order History' },
     { to: '/owner/staff', icon: Users, label: 'Staff & Team' },
+    { to: '/owner/payroll', icon: DollarSign, label: 'Payroll & HR' },
     { to: '/owner/reports', icon: BarChart3, label: 'Financial Reports' },
     { to: '/owner/settings', icon: Settings, label: 'Global Settings' },
   ];

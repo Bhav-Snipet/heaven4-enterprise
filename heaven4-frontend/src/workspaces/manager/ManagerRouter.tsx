@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ManagerDashboard from './pages/ManagerDashboard';
 import ManagerComplaintsPage from './pages/ManagerComplaintsPage';
+import ManagerPointsOverridePage from './pages/ManagerPointsOverridePage';
 
 export default function ManagerRouter() {
   return (
@@ -14,6 +15,7 @@ export default function ManagerRouter() {
             <p>No shift swaps or voids require approval at this time.</p>
         </div>
       } />
+      <Route path="points-override" element={<ManagerPointsOverridePage />} />
     </Routes>
   );
 }

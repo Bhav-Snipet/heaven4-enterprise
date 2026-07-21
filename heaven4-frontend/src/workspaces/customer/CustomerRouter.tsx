@@ -5,6 +5,8 @@ import CustomerCartPage from './pages/CustomerCartPage';
 import CustomerRewardsPage from './pages/CustomerRewardsPage';
 import CustomerComplaintPage from './pages/CustomerComplaintPage';
 import CustomerOrderStatusPage from './pages/CustomerOrderStatusPage';
+import CustomerMembershipPage from './pages/CustomerMembershipPage';
+import CustomerProfilePage from './pages/CustomerProfilePage';
 
 export default function CustomerRouter() {
   return (
@@ -15,6 +17,8 @@ export default function CustomerRouter() {
       <Route path="rewards" element={<CustomerRewardsPage />} />
       <Route path="complaint" element={<CustomerComplaintPage />} />
       <Route path="order-status" element={<CustomerOrderStatusPage />} />
+      <Route path="membership" element={<CustomerMembershipPage />} />
+      <Route path="profile" element={<CustomerProfilePage />} />
       <Route path="session" element={<div>Dining Session Page</div>} />
     </Routes>
   );

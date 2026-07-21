@@ -14,6 +14,7 @@ import com.heaven4.engines.orders.dto.CreateOrderItemRequest;
 import com.heaven4.engines.orders.dto.CreateOrderRequest;
 import com.heaven4.engines.orders.dto.OrderDto;
 import com.heaven4.engines.orders.dto.OrderItemDto;
+import com.heaven4.engines.membership.MembershipEngine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class OrdersEngineImpl implements OrdersEngine {
     private final MenuItemRepository menuItemRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final MembershipEngine membershipEngine;
 
     @Override
     @Transactional
@@ -77,7 +79,17 @@ public class OrdersEngineImpl implements OrdersEngine {
         Order savedOrder = orderRepository.save(order);
         OrderDto orderDto = mapToDto(savedOrder);
         
-        // Broadcast new order to operations/kitchen
+        // Award points immediately upon ordering as per user request
+        try {
+            int points = savedOrder.getTotalAmount().intValue() * 10;
+            if (points > 0) {
+                membershipEngine.awardPoints(customer.getId(), points, "Order placed", null);
+            }
+        } catch (Exception e) {
+            log.error("Failed to award points for order placement {}", savedOrder.getId(), e);
+        }
+
+        // Broadcast to operations dashboard
         messagingTemplate.convertAndSend("/topic/operations", orderDto);
         
         return orderDto;
@@ -109,6 +121,9 @@ public class OrdersEngineImpl implements OrdersEngine {
         order.setStatus(newStatus);
         Order savedOrder = orderRepository.save(order);
         OrderDto orderDto = mapToDto(savedOrder);
+        
+        // Award points if completed
+        // Points are now awarded at order placement
         
         // Broadcast status update
         messagingTemplate.convertAndSend("/topic/operations", orderDto);

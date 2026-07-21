@@ -39,17 +39,25 @@ export default function ManagerDashboard() {
     const [modal, setModal] = useState<ModalType>(null);
     const [editingOrder, setEditingOrder] = useState<OrderDto | null>(null);
     const [discountInput, setDiscountInput] = useState("");
+    const [staffList, setStaffList] = useState<any[]>([]);
 
     const fetchData = async () => {
         try {
-            const [opsRes, ordersRes, complaintsRes] = await Promise.all([
-                apiClient.get('/manager/operations/summary'),
-                apiClient.get('/orders/active'),
-                apiClient.get('/complaints'),
+            const [opsRes, ordersRes, complaintsRes, staffRes] = await Promise.all([
+                apiClient.get('/manager/operations/summary').catch(() => ({ data: { activeOrders: 0, staffOnShift: 0, lowStockItems: 0, tableTurnaroundMins: 0 } })),
+                apiClient.get('/orders/active').catch(() => ({ data: [] })),
+                apiClient.get('/complaints').catch(() => ({ data: [] })),
+                apiClient.get('/admin/users').catch(() => ({ data: [] }))
             ]);
             setStats(opsRes.data);
             setRecentOrders(ordersRes.data.slice(0, 5));
             setComplaints(complaintsRes.data);
+            
+            // Filter to only staff roles
+            const staffMembers = staffRes.data.filter((u: any) => 
+                u.roles?.some((r: any) => ['EMPLOYEE', 'KITCHEN', 'MANAGER', 'OWNER'].includes(r.role))
+            );
+            setStaffList(staffMembers);
         } catch (e) {
             console.error(e);
         }
@@ -92,7 +100,7 @@ export default function ManagerDashboard() {
 
     const metrics = [
         { title: 'Active Orders', value: stats.activeOrders, icon: ShoppingCart, color: 'text-blue-400', bg: 'bg-blue-400/10', modal: 'orders' as ModalType },
-        { title: 'Staff on Shift', value: stats.staffOnShift, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-400/10', modal: 'staff' as ModalType },
+        { title: 'Staff on Shift', value: staffList.length || stats.staffOnShift, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-400/10', modal: 'staff' as ModalType },
         { title: 'Avg Turnaround', value: `${stats.tableTurnaroundMins}m`, icon: Clock, color: 'text-purple-400', bg: 'bg-purple-400/10', modal: null },
         { title: 'Complaints', value: openComplaints.length, icon: MessageSquare, color: 'text-red-400', bg: 'bg-red-400/10', modal: 'complaints' as ModalType },
     ];
@@ -244,10 +252,39 @@ export default function ManagerDashboard() {
                                     </div>
                                 ))}
                                 {modal === 'staff' && (
-                                    <div className="text-center text-slate-500 py-8">
-                                        <Users className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-                                        <p>Staff attendance tracking coming soon.</p>
-                                        <p className="text-sm mt-1">Currently showing {stats.staffOnShift} active sessions.</p>
+                                    <div className="space-y-3">
+                                        {staffList.length === 0 ? (
+                                            <div className="text-center text-slate-500 py-8">
+                                                <Users className="w-12 h-12 mx-auto mb-3 text-slate-700" />
+                                                <p>No active staff found.</p>
+                                            </div>
+                                        ) : (
+                                            staffList.map((staffMember, i) => (
+                                                <div key={i} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                                                            {staffMember.displayName?.charAt(0) || 'S'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-white">{staffMember.displayName || 'Unknown Staff'}</p>
+                                                            <p className="text-xs text-slate-400">{staffMember.phoneNumber}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="flex gap-1 justify-end mb-1">
+                                                            {staffMember.roles?.map((r: any, idx: number) => (
+                                                                <span key={idx} className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-700 text-slate-300">
+                                                                    {r.role}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <p className="text-xs text-emerald-400 flex items-center gap-1 justify-end">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 )}
                                 {modal === 'complaints' && openComplaints.map(c => (

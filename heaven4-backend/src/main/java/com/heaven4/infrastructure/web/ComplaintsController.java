@@ -34,13 +34,13 @@ public class ComplaintsController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'OWNER', 'KITCHEN')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'OWNER', 'KITCHEN', 'EMPLOYEE')")
     public ResponseEntity<List<Complaint>> getAllComplaints() {
         return ResponseEntity.ok(complaintRepository.findAllByOrderByCreatedAtDesc());
     }
 
     @PutMapping("/{id}/resolve")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'OWNER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'OWNER', 'EMPLOYEE')")
     public ResponseEntity<Complaint> resolveComplaint(
             @PathVariable Long id,
             @AuthenticationPrincipal HeavenUserDetails userDetails,

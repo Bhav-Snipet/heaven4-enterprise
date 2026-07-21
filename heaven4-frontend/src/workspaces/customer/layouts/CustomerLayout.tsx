@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
-import { Home, Award, ShoppingBag, LogOut, User, MessageSquare } from 'lucide-react';
+import { Home, Award, ShoppingBag, LogOut, User, MessageSquare, Crown } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import { useCart } from '../context/CartContext';
 import { motion } from 'framer-motion';
@@ -16,8 +16,10 @@ export default function CustomerLayout() {
 
   const navItems = [
     { to: '/customer/menu', icon: Home, label: 'Menu', end: true },
+    { to: '/customer/membership', icon: Crown, label: 'VIP' },
     { to: '/customer/rewards', icon: Award, label: 'Rewards' },
     { to: '/customer/cart', icon: ShoppingBag, label: 'Cart', badge: items.length > 0 ? items.length : null },
+    { to: '/customer/profile', icon: User, label: 'Profile' },
     { to: '/customer/complaint', icon: MessageSquare, label: 'Help' },
   ];
 
@@ -36,10 +38,10 @@ export default function CustomerLayout() {
           </Link>
           
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
+            <Link to="/customer/profile" className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 hover:bg-white/10 transition-colors cursor-pointer">
               <User className="w-4 h-4 text-heaven-400" />
               <span className="text-sm font-medium text-slate-300">{user?.displayName || 'Guest'}</span>
-            </div>
+            </Link>
             <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors">
               <LogOut className="w-5 h-5" />
             </button>

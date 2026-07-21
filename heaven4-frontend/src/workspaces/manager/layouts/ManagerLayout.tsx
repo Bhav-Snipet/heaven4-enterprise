@@ -15,6 +15,7 @@ export default function ManagerLayout() {
     { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/manager/complaints', icon: AlertCircle, label: 'Complaints' },
     { to: '/manager/approvals', icon: CheckCircle, label: 'Approvals' },
+    { to: '/manager/points-override', icon: CheckCircle, label: 'Points Override' },
   ];
 
   return (

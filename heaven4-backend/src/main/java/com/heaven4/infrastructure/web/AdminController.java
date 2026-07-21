@@ -28,7 +28,7 @@ public class AdminController {
     // --- USER MANAGEMENT ---
 
     @GetMapping("/users")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'MANAGER')")
     public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
         List<User> users = userRepository.findAll();
         List<Map<String, Object>> result = new ArrayList<>();
@@ -52,6 +52,16 @@ public class AdminController {
             @RequestBody Map<String, String> body) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Enforce hierarchy: Admin cannot edit Owner
+        boolean isCurrentUserOwner = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_OWNER"));
+                
+        if (!isCurrentUserOwner && userRoleRepository.findByUserIdAndActiveTrue(userId)
+                .stream().anyMatch(r -> r.getRole().equals("OWNER"))) {
+            throw new RuntimeException("Admins cannot modify OWNER roles");
+        }
 
         // Deactivate existing roles
         List<UserRole> existingRoles = userRoleRepository.findByUserIdAndActiveTrue(userId);

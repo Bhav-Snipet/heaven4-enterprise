@@ -169,7 +169,7 @@ export default function CustomerCartPage() {
                 <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
                     className="flex gap-3 w-full max-w-md mb-4">
                     <button onClick={() => navigate('/customer/menu')}
-                        className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-all">
+                        className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white rounded-xl font-bold transition-all">
                         ← Back to Menu
                     </button>
                     <button onClick={() => setShowBill(true)}
@@ -190,7 +190,7 @@ export default function CustomerCartPage() {
                             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4"
                             onClick={() => setShowBill(false)}>
                             <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
-                                className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-md shadow-2xl"
+                                className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-600"
                                 onClick={e => e.stopPropagation()}>
                                 
                                 <div className="flex justify-between items-center mb-6">
@@ -238,13 +238,13 @@ export default function CustomerCartPage() {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-10">
             {/* Header */}
-            <div className="sticky top-0 z-30 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-4 flex items-center gap-4">
+            <div className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 p-4 flex items-center gap-4">
                 <button onClick={() => navigate('/customer/menu')}
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors flex items-center gap-2">
+                    className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white rounded-full transition-colors flex items-center gap-2">
                     <ArrowLeft className="w-6 h-6" />
                     <span className="font-semibold text-sm">Back to Menu</span>
                 </button>
-                <h1 className="text-2xl font-bold">Your Cart</h1>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Your Cart</h1>
             </div>
 
             {items.length === 0 ? (
@@ -283,12 +283,12 @@ export default function CustomerCartPage() {
                                 
                                 <div className="flex items-center justify-between mt-3">
                                     {!item.isReward && (
-                                        <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-900 rounded-lg p-1">
+                                        <div className="flex items-center gap-3 bg-slate-200 dark:bg-slate-800 rounded-lg p-1 border border-slate-300 dark:border-slate-600">
                                             <button onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
-                                                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded shadow-sm font-bold">-</button>
-                                            <span className="font-semibold w-4 text-center">{item.quantity}</span>
+                                                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-600 text-slate-900 dark:text-white rounded shadow-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-500 transition-colors">-</button>
+                                            <span className="font-bold w-4 text-center text-slate-900 dark:text-white">{item.quantity}</span>
                                             <button onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                                                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded shadow-sm font-bold">+</button>
+                                                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-600 text-slate-900 dark:text-white rounded shadow-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-500 transition-colors">+</button>
                                         </div>
                                     )}
                                     {item.isReward && <span className="text-xs text-slate-500">Qty: {item.quantity}</span>}

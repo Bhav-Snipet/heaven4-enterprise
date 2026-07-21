@@ -38,4 +38,10 @@ public class User extends BaseEntity {
 
     @Column(name = "password_hash")
     private String passwordHash;
+
+    @Column(name = "date_of_birth")
+    private java.time.LocalDate dateOfBirth;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 }

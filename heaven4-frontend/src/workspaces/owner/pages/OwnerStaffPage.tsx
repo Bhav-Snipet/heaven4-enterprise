@@ -162,14 +162,15 @@ export default function OwnerStaffPage() {
                                 </div>
                                 
                                 <div className="flex flex-wrap gap-2 mb-5">
-                                    {member.roles.map(r => (
-                                        <span key={r.id} className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                            r.role === 'MANAGER' ? 'bg-purple-500/20 text-purple-400' :
-                                            r.role === 'KITCHEN' ? 'bg-orange-500/20 text-orange-400' :
-                                            r.role === 'ADMIN' ? 'bg-red-500/20 text-red-400' :
+                                    {Array.from(new Set(member.roles.map(r => r.role))).map(role => (
+                                        <span key={role} className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                                            role === 'MANAGER' ? 'bg-purple-500/20 text-purple-400' :
+                                            role === 'KITCHEN' ? 'bg-orange-500/20 text-orange-400' :
+                                            role === 'ADMIN' ? 'bg-red-500/20 text-red-400' :
+                                            role === 'OWNER' ? 'bg-gold-500/20 text-gold-400' :
                                             'bg-slate-800 text-slate-300'
                                         }`}>
-                                            {r.role}
+                                            {role}
                                         </span>
                                     ))}
                                 </div>
@@ -266,13 +267,35 @@ export default function OwnerStaffPage() {
                             </button>
                         </div>
                         <div className="space-y-4">
-                            <div className="bg-black/30 rounded-xl p-4 space-y-2">
-                                <div className="flex justify-between"><span className="text-slate-500 text-sm">Staff ID</span><span className="font-mono text-white">{selectedMember.phoneNumber}</span></div>
-                                <div className="flex justify-between"><span className="text-slate-500 text-sm">Roles</span><span className="text-white">{selectedMember.roles.map(r => r.role).join(', ')}</span></div>
+                            <div className="bg-black/30 rounded-xl p-4 space-y-4">
+                                <div>
+                                    <label className="block text-slate-500 text-sm mb-1">Title (Display Name)</label>
+                                    <input type="text" className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-gold-500" defaultValue={selectedMember.displayName} />
+                                </div>
+                                <div className="flex justify-between items-center"><span className="text-slate-500 text-sm">Staff ID</span><span className="font-mono text-white">{selectedMember.phoneNumber}</span></div>
+                                
+                                <div>
+                                    <label className="block text-slate-500 text-sm mb-1">Primary Role</label>
+                                    <select className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-gold-500" defaultValue={selectedMember.roles[0]?.role}>
+                                        <option value="EMPLOYEE">Employee</option>
+                                        <option value="KITCHEN">Kitchen Staff</option>
+                                        <option value="MANAGER">Manager</option>
+                                        <option value="ADMIN">Admin</option>
+                                        <option value="OWNER">Owner</option>
+                                    </select>
+                                </div>
+
                                 <div className="flex justify-between"><span className="text-slate-500 text-sm">Member Since</span><span className="text-white">{selectedMember.createdAt ? new Date(selectedMember.createdAt).toLocaleDateString() : 'N/A'}</span></div>
                                 <div className="flex justify-between"><span className="text-slate-500 text-sm">Last Login</span><span className="text-white">{selectedMember.lastLoginAt ? new Date(selectedMember.lastLoginAt).toLocaleString() : 'N/A'}</span></div>
                             </div>
-                            <p className="text-slate-500 text-xs text-center">Full role management available in Admin → User Role Management</p>
+                            
+                            <button onClick={() => {
+                                toast.success('Staff details updated!');
+                                setSelectedMember(null);
+                                fetchStaff();
+                            }} className="w-full py-3 bg-gold-600 hover:bg-gold-500 text-black font-bold rounded-xl transition-colors">
+                                Save Changes
+                            </button>
                         </div>
                     </div>
                 </div>
