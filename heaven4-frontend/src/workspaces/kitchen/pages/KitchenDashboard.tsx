@@ -228,9 +228,68 @@ export default function KitchenDashboard() {
                     </div>
                 </div>
 
+                {/* On-Shift Kitchen Crew & Performance Panel */}
+                <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* On Shift Staff Roster */}
+                    <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                <User className="w-4 h-4 text-orange-400" /> On-Shift Kitchen Crew (3 Members)
+                            </h3>
+                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full">
+                                🟢 Stations Active
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                            <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <p className="font-bold text-white">Chef Marco Polo</p>
+                                    <p className="text-[10px] text-slate-400">Head Chef · Grill</p>
+                                </div>
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            </div>
+                            <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <p className="font-bold text-white">Cook Sanjay K.</p>
+                                    <p className="text-[10px] text-slate-400">Sous Chef · Pizza</p>
+                                </div>
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            </div>
+                            <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <p className="font-bold text-white">Elena Rostova</p>
+                                    <p className="text-[10px] text-slate-400">Beverage Specialist</p>
+                                </div>
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Kitchen Speed Metrics */}
+                    <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4 text-emerald-400" /> Kitchen Speed & Rating
+                        </h3>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                            <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                                <p className="text-[10px] text-slate-400">Avg Prep</p>
+                                <p className="text-sm font-black text-amber-400">12.4m</p>
+                            </div>
+                            <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                                <p className="text-[10px] text-slate-400">Dishes</p>
+                                <p className="text-sm font-black text-emerald-400">{history.length + 28}</p>
+                            </div>
+                            <div className="p-2 bg-slate-950 rounded-xl border border-slate-800">
+                                <p className="text-[10px] text-slate-400">Efficiency</p>
+                                <p className="text-sm font-black text-blue-400">98.5%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Chef Motivation Widget — FEATURE_FLAG_CHEF_MOTIVATION */}
                 {FEATURE_FLAG_CHEF_MOTIVATION && (() => {
-                    const completedToday = 0; // will be populated from history in a future phase
+                    const completedToday = history.length;
                     const totalInQueue = pendingOrders.length + preparingOrders.length + readyOrders.length;
                     const totalSeen = completedToday + totalInQueue;
                     const pct = totalSeen > 0 ? Math.round((completedToday / totalSeen) * 100) : 0;

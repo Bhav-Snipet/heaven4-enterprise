@@ -158,58 +158,89 @@ export default function EmployeeDashboard() {
         return `${Math.floor(mins / 60)}h ${mins % 60}m`;
     };
 
+    const [isClockedIn, setIsClockedIn] = useState(true);
+    const [clockInTime] = useState('09:00 AM');
+    const [showStaffProfileModal, setShowStaffProfileModal] = useState(false);
+    const [staffDetails, setStaffDetails] = useState({
+        name: user?.displayName || 'Alex Rivera',
+        role: 'Floor Captain / POS Waiter',
+        phone: user?.phoneNumber || '+1 555-0192',
+        shiftHours: '09:00 AM - 05:00 PM',
+        department: 'Dining Floor Operations',
+        tablesGoal: 20,
+        currentScore: 98
+    });
+
+    const toggleClockIn = () => {
+        setIsClockedIn(!isClockedIn);
+        toast.success(!isClockedIn ? 'Clocked IN for shift!' : 'Clocked OUT from shift.');
+    };
+
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 md:p-6">
+        <div className="min-h-screen bg-slate-950 text-white p-4 md:p-6 space-y-6">
             {/* Header */}
-            <header className="mb-8 flex justify-between items-start">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
                 <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
-                        Floor POS
+                    <h1 className="text-3xl font-black bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-300 bg-clip-text text-transparent">
+                        Floor POS & Staff Operations
                     </h1>
-                    <p className="text-slate-500 mt-1">Manage tables and take orders.</p>
+                    <p className="text-xs text-slate-400 mt-1">Real-time table management & waiter calls</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    {/* Shift Info */}
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-right shadow-sm">
-                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                            <User className="w-4 h-4 text-blue-500" />
-                            <span className="font-bold text-sm">{user?.displayName || 'Employee'}</span>
+                <div className="flex flex-wrap items-center gap-3">
+                    {/* Shift Clock Toggle */}
+                    <button 
+                        onClick={toggleClockIn}
+                        className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 border transition-all ${
+                            isClockedIn 
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20' 
+                            : 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
+                        }`}
+                    >
+                        <span className={`w-2 h-2 rounded-full ${isClockedIn ? 'bg-emerald-400 animate-ping' : 'bg-red-500'}`} />
+                        {isClockedIn ? `Clocked In (${clockInTime})` : 'Clocked Out'}
+                    </button>
+
+                    {/* Staff Profile & Goals */}
+                    <button 
+                        onClick={() => setShowStaffProfileModal(true)}
+                        className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-2.5 flex items-center gap-2 text-left shadow-sm transition-all"
+                    >
+                        <User className="w-4 h-4 text-blue-400" />
+                        <div>
+                            <p className="font-bold text-xs text-amber-400">{staffDetails.name}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold">{tablesServed}/{staffDetails.tablesGoal} Goals · {staffDetails.currentScore}% Score</p>
                         </div>
-                        <div className="flex items-center gap-2 mt-1 text-slate-500">
-                            <Clock className="w-3 h-3" />
-                            <span className="text-xs">{shiftElapsed()} on shift · {tablesServed} closed</span>
-                        </div>
-                    </div>
+                    </button>
+
                     <button onClick={() => { setSelectedItems([]); setWalkInTable(''); setModal('walkin'); }}
-                        className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 flex items-center gap-2 transition-all">
-                        <Plus className="w-5 h-5" /> New Walk-in
+                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all text-xs">
+                        <Plus className="w-4 h-4" /> New Walk-in Order
                     </button>
                 </div>
             </header>
 
             {/* Complaints Alert Banner */}
             {complaints.length > 0 && (
-                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-2xl flex items-center gap-3">
+                <div className="p-4 bg-red-900/20 border border-red-500/40 rounded-2xl flex items-center gap-3">
                     <AlertTriangle className="w-6 h-6 text-red-500 shrink-0" />
                     <div className="flex-1">
-                        <p className="font-bold text-red-700 dark:text-red-300">
-                            {complaints.length} Active Complaint{complaints.length > 1 ? 's' : ''} — Requires Attention
+                        <p className="font-bold text-red-400 text-sm">
+                            {complaints.length} Active Customer Complaint{complaints.length > 1 ? 's' : ''} — Action Needed
                         </p>
-                        <p className="text-sm text-red-500">{complaints.map(c => c.type.replace(/_/g, ' ')).join(' · ')}</p>
+                        <p className="text-xs text-red-300 mt-0.5">{complaints.map(c => c.type.replace(/_/g, ' ')).join(' · ')}</p>
                     </div>
                     <button
                         onClick={() => setModal('complaint')}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors"
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition-colors"
                     >
                         View All
                     </button>
                 </div>
             )}
 
-            {/* Table Grid */}
+            {/* Table Grid (Dark Glassmorphic Cards) */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {tables.map(table => {
-                    // Check if this table has an active complaint
                     const tableComplaint = complaints.find(c => 
                         c.tableNumber === table.id || 
                         (table.orderId && c.orderId === table.orderId)
@@ -219,14 +250,14 @@ export default function EmployeeDashboard() {
                         className={`p-5 rounded-3xl border-2 transition-all ${
                             table.status === 'OCCUPIED' 
                                 ? tableComplaint
-                                    ? 'bg-white dark:bg-slate-800 border-red-500 shadow-xl shadow-red-500/20'
-                                    : 'bg-white dark:bg-slate-800 border-blue-500 shadow-xl shadow-blue-500/10' 
-                                : 'bg-slate-100 dark:bg-slate-800/50 border-transparent hover:border-slate-300 dark:hover:border-slate-600'
+                                    ? 'bg-slate-900 border-red-500 shadow-xl shadow-red-500/20'
+                                    : 'bg-slate-900 border-blue-500 shadow-xl shadow-blue-500/10' 
+                                : 'bg-slate-950 border-slate-800 hover:border-blue-500/50'
                         }`}>
                         <div className="flex justify-between items-start mb-4">
                             <h3 className={`text-2xl font-black ${
-                                tableComplaint ? 'text-red-600 dark:text-red-400' :
-                                table.status === 'OCCUPIED' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
+                                tableComplaint ? 'text-red-400' :
+                                table.status === 'OCCUPIED' ? 'text-blue-400' : 'text-slate-400'
                             }`}>
                                 T{table.id}
                             </h3>
@@ -234,16 +265,16 @@ export default function EmployeeDashboard() {
                                 {tableComplaint && (
                                     <button
                                         onClick={() => setSelectedComplaint(tableComplaint)}
-                                        className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 animate-pulse"
+                                        className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 animate-pulse border border-red-500/30"
                                     >
                                         <AlertTriangle className="w-3 h-3" /> Complaint
                                     </button>
                                 )}
                                 {table.status === 'OCCUPIED' && !tableComplaint && (
-                                    <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <div className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 border border-blue-500/30">
                                         Occupied
                                         {table.membershipTier && table.membershipTier !== 'BRONZE' && (
-                                            <Crown className={`w-3 h-3 ${table.membershipTier === 'DIAMOND' ? 'text-indigo-500' : table.membershipTier === 'GOLD' ? 'text-yellow-500' : 'text-slate-400'}`} />
+                                            <Crown className={`w-3 h-3 ${table.membershipTier === 'DIAMOND' ? 'text-indigo-400' : table.membershipTier === 'GOLD' ? 'text-yellow-400' : 'text-slate-400'}`} />
                                         )}
                                     </div>
                                 )}
@@ -256,17 +287,17 @@ export default function EmployeeDashboard() {
                                     {table.items && table.items.length > 0 ? (
                                         table.items.map((item, idx) => (
                                             <div key={idx} className="flex justify-between text-sm">
-                                                <span className="text-slate-700 dark:text-slate-300 truncate pr-2"><span className="text-blue-500 font-bold">{item.quantity}x</span> {item.menuItemName}</span>
-                                                <span className="font-medium text-slate-900 dark:text-white">${item.subtotal.toFixed(2)}</span>
+                                                <span className="text-slate-300 truncate pr-2"><span className="text-blue-400 font-bold">{item.quantity}x</span> {item.menuItemName}</span>
+                                                <span className="font-bold text-amber-400">${item.subtotal.toFixed(2)}</span>
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="text-xs text-slate-400 italic">No items yet</p>
+                                        <p className="text-xs text-slate-500 italic">No items yet</p>
                                     )}
                                 </div>
-                                <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between items-end mb-4">
-                                    <p className="text-xs text-slate-500">Current Bill</p>
-                                    <p className="text-xl font-bold dark:text-white">${table.orderTotal.toFixed(2)}</p>
+                                <div className="border-t border-slate-800 pt-2 flex justify-between items-end mb-4">
+                                    <p className="text-xs text-slate-400">Current Bill</p>
+                                    <p className="text-xl font-black text-emerald-400">${table.orderTotal.toFixed(2)}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => openAddModal(table)}

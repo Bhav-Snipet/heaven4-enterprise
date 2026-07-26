@@ -182,47 +182,55 @@ export default function CustomerCartPage() {
                     className="w-full max-w-md py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all">
                     View My Rewards +{pointsEarned} pts
                 </motion.button>
-
-                {/* Bill Modal */}
+                
+                {/* Compact Bordered Receipt Modal */}
                 <AnimatePresence>
                     {showBill && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-4"
+                            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
                             onClick={() => setShowBill(false)}>
-                            <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
-                                className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 dark:border-slate-600"
+                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                                className="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl text-slate-900 dark:text-white relative"
                                 onClick={e => e.stopPropagation()}>
                                 
-                                <div className="flex justify-between items-center mb-6">
+                                <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4 mb-4">
                                     <div>
-                                        <h3 className="text-xl font-bold">Your Receipt</h3>
-                                        <p className="text-sm text-slate-500">Order #{placedOrder.id} · Table {placedOrder.tableNumber}</p>
+                                        <h3 className="text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                                            TAX RECEIPT / BILL
+                                        </h3>
+                                        <p className="text-xs text-slate-500 font-bold">Order #{placedOrder.id} · Table {placedOrder.tableNumber}</p>
                                     </div>
-                                    <button onClick={() => setShowBill(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                                    <button onClick={() => setShowBill(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-white">
                                         <X className="w-5 h-5" />
                                     </button>
                                 </div>
 
-                                <div className="space-y-2 mb-4">
+                                {/* Itemized Breakdown */}
+                                <div className="space-y-2 mb-4 text-xs font-semibold max-h-48 overflow-y-auto pr-1">
                                     {placedOrder.items.map((item, idx) => (
-                                        <div key={idx} className="flex justify-between text-sm">
-                                            <span className="text-slate-600 dark:text-slate-300">{item.quantity}x {item.name}</span>
-                                            <span className="font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                                        <div key={idx} className="flex justify-between p-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                                            <span className="text-slate-800 dark:text-slate-200">{item.quantity}× {item.name}</span>
+                                            <span className="font-bold text-slate-900 dark:text-amber-400">${(item.price * item.quantity).toFixed(2)}</span>
                                         </div>
                                     ))}
                                 </div>
 
-                                <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-2 text-sm">
-                                    <div className="flex justify-between text-slate-500"><span>Subtotal</span><span>${placedOrder.subtotal.toFixed(2)}</span></div>
-                                    <div className="flex justify-between text-slate-500"><span>Tax (8%)</span><span>${placedOrder.tax.toFixed(2)}</span></div>
-                                    {placedOrder.tip > 0 && <div className="flex justify-between text-slate-500"><span>Tip</span><span>${placedOrder.tip.toFixed(2)}</span></div>}
-                                    <div className="flex justify-between text-lg font-bold pt-2 border-t border-slate-200 dark:border-slate-700">
-                                        <span>Total</span><span>${placedOrder.total.toFixed(2)}</span>
+                                {/* Tax & Summary */}
+                                <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-1.5 text-xs font-medium">
+                                    <div className="flex justify-between text-slate-500"><span>Items Subtotal</span><span>${placedOrder.subtotal.toFixed(2)}</span></div>
+                                    <div className="flex justify-between text-slate-500"><span>GST / Service Tax (5%)</span><span>${(placedOrder.subtotal * 0.05).toFixed(2)}</span></div>
+                                    {placedOrder.tip > 0 && <div className="flex justify-between text-slate-500"><span>Staff Tip</span><span>${placedOrder.tip.toFixed(2)}</span></div>}
+                                    
+                                    <div className="flex justify-between text-base font-black text-slate-900 dark:text-emerald-400 pt-3 border-t-2 border-slate-900 dark:border-slate-100">
+                                        <span>TOTAL PAYABLE</span>
+                                        <span>${(placedOrder.subtotal * 1.05 + placedOrder.tip).toFixed(2)}</span>
                                     </div>
                                 </div>
 
-                                <p className="text-xs text-slate-400 text-center mt-4">{placedOrder.placedAt}</p>
-
+                                <div className="mt-4 pt-3 border-t border-dashed border-slate-300 dark:border-slate-800 text-center">
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Thank you for dining with us!</p>
+                                </div>
+                                
                                 <button onClick={handleDownloadBill}
                                     className="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all">
                                     <Download className="w-4 h-4" /> Download Receipt
