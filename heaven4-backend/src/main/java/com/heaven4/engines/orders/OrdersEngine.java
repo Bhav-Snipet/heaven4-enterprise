@@ -16,4 +16,5 @@ public interface OrdersEngine {
     OrderDto addItemsToOrder(Long orderId, CreateOrderRequest request);
     OrderDto applyDiscount(Long orderId, java.math.BigDecimal discountAmount);
     OrderDto removeItemFromOrder(Long orderId, Long orderItemId);
+    OrderDto getTableBill(String tableNo);
 }

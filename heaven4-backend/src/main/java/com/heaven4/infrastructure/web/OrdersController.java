@@ -21,6 +21,7 @@ import java.util.Map;
 public class OrdersController {
 
     private final OrdersEngine ordersEngine;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('CUSTOMER', 'EMPLOYEE', 'MANAGER', 'ADMIN', 'OWNER')")
@@ -28,6 +29,7 @@ public class OrdersController {
             @AuthenticationPrincipal HeavenUserDetails userDetails,
             @Valid @RequestBody CreateOrderRequest request) {
         OrderDto order = ordersEngine.placeOrder(userDetails.getUserId(), request);
+        messagingTemplate.convertAndSend("/topic/operations", order);
         return ResponseEntity.ok(order);
     }
 
@@ -87,5 +89,10 @@ public class OrdersController {
             @PathVariable Long orderId,
             @PathVariable Long orderItemId) {
         return ResponseEntity.ok(ordersEngine.removeItemFromOrder(orderId, orderItemId));
+    }
+
+    @GetMapping("/table/{tableNo}/bill")
+    public ResponseEntity<OrderDto> getTableBill(@PathVariable String tableNo) {
+        return ResponseEntity.ok(ordersEngine.getTableBill(tableNo));
     }
 }

@@ -1,10 +1,12 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import { LogOut, Coffee } from 'lucide-react';
+import { LogOut, Coffee, Volume2, VolumeX, User } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
+import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 
 export default function EmployeeLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { isMuted, toggleMute, playSound } = useAudioAlerts();
 
   const handleLogout = () => {
     logout();
@@ -14,11 +16,21 @@ export default function EmployeeLayout() {
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col md:flex-row">
       <aside className="w-full md:w-64 bg-white dark:bg-slate-900 shadow-soft hidden md:flex flex-col border-r border-slate-200 dark:border-slate-800">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-            <Coffee className="w-5 h-5 text-white" />
+        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <Coffee className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-xl font-display font-bold text-slate-900 dark:text-white">Staff POS</h1>
           </div>
-          <h1 className="text-xl font-display font-bold text-slate-900 dark:text-white">Staff POS</h1>
+          <div className="flex items-center gap-1">
+            <button onClick={() => playSound('waiter_call')} title="Test Waiter Bell Sound" className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all">
+              🔔 Sound Test
+            </button>
+            <button onClick={toggleMute} className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-blue-600">
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
@@ -45,6 +57,10 @@ export default function EmployeeLayout() {
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Logged In</p>
             <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{user?.displayName || 'Employee'}</p>
           </div>
+          <button onClick={() => navigate('/employee/settings')} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors mb-2">
+            <User className="w-5 h-5" />
+            My Profile
+          </button>
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors">
             <LogOut className="w-5 h-5" />
             Sign Out
@@ -58,7 +74,12 @@ export default function EmployeeLayout() {
             <Coffee className="w-5 h-5 text-blue-600" />
             <h1 className="text-lg font-bold">Staff POS</h1>
           </div>
-          <button onClick={handleLogout} className="text-slate-500 hover:text-red-500"><LogOut className="w-5 h-5" /></button>
+          <div className="flex items-center gap-3">
+            <button onClick={toggleMute} className="text-slate-500 hover:text-blue-600">
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+            <button onClick={handleLogout} className="text-slate-500 hover:text-red-500"><LogOut className="w-5 h-5" /></button>
+          </div>
         </header>
         <div className="w-full h-full max-w-7xl mx-auto">
           <Outlet />

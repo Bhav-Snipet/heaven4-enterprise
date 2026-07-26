@@ -43,4 +43,7 @@ public class MenuItem extends BaseEntity {
 
     @Column(nullable = false)
     private Integer sortOrder = 0;
+
+    @Column(name = "prep_time_minutes", nullable = false)
+    private Integer prepTimeMinutes = 15;
 }

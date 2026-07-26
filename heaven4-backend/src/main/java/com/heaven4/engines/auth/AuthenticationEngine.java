@@ -17,6 +17,9 @@ public interface AuthenticationEngine {
     /** Authenticates via Google OAuth token and returns an auth result. */
     AuthResult authenticateWithGoogle(String googleIdToken);
 
+    /** Authenticates via Google OAuth token and returns an auth result. */
+    AuthResult loginWithGoogle(String googleToken);
+
     /** Refreshes an access token using a valid refresh token. */
     AuthResult refreshToken(String refreshToken);
 

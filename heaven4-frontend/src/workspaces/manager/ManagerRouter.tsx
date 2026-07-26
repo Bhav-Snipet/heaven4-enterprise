@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ManagerDashboard from './pages/ManagerDashboard';
 import ManagerComplaintsPage from './pages/ManagerComplaintsPage';
 import ManagerPointsOverridePage from './pages/ManagerPointsOverridePage';
+import UserSettingsPage from '@/shared/components/UserSettingsPage';
 
 export default function ManagerRouter() {
   return (
@@ -16,6 +17,7 @@ export default function ManagerRouter() {
         </div>
       } />
       <Route path="points-override" element={<ManagerPointsOverridePage />} />
+      <Route path="settings" element={<UserSettingsPage />} />
     </Routes>
   );
 }

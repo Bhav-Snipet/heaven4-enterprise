@@ -24,9 +24,10 @@ public class BillingController {
             @RequestBody Map<String, Object> payload) {
         
         BigDecimal tipAmount = new BigDecimal(payload.getOrDefault("tipAmount", "0").toString());
+        BigDecimal discountPercentage = new BigDecimal(payload.getOrDefault("discountPercentage", "0").toString());
         String paymentMethod = payload.getOrDefault("paymentMethod", "CARD").toString();
         
-        Invoice invoice = billingEngine.processCheckout(orderId, tipAmount, paymentMethod);
+        Invoice invoice = billingEngine.processCheckout(orderId, tipAmount, discountPercentage, paymentMethod);
         return ResponseEntity.ok(invoice);
     }
 }

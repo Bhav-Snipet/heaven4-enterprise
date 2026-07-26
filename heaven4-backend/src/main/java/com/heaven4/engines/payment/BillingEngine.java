@@ -12,7 +12,7 @@ public interface BillingEngine {
      * Processes checkout for an active order, applies tax and tips, and generates an invoice.
      * Triggers Rewards logic internally if the user is a logged-in customer.
      */
-    Invoice processCheckout(Long orderId, BigDecimal tipAmount, String paymentMethod);
+    Invoice processCheckout(Long orderId, BigDecimal tipAmount, BigDecimal discountPercentage, String paymentMethod);
     
     /** Retrieves an invoice by order ID */
     Invoice getInvoiceByOrderId(Long orderId);

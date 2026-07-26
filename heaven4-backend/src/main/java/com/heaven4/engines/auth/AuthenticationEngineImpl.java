@@ -85,6 +85,73 @@ public class AuthenticationEngineImpl implements AuthenticationEngine {
 
     @Override
     @Transactional
+    public AuthResult loginWithGoogle(String googleToken) {
+        log.info("Authenticating Google Login...");
+        try {
+            if ("mock_google_token".equals(googleToken)) {
+                // Mock Google Login Option A
+                String email = "mockuser@google.com";
+                String name = "Mock Google User";
+                
+                User user = userRepository.findByEmail(email).orElse(null);
+                if (user == null) {
+                    user = new User();
+                    user.setPhoneNumber("G-" + email);
+                    user.setEmail(email);
+                    user.setFirstName("Mock");
+                    user.setLastName("User");
+                    user = userRepository.save(user);
+                    
+                    UserRole defaultRole = new UserRole();
+                    defaultRole.setUser(user);
+                    defaultRole.setRole("CUSTOMER");
+                    defaultRole.setWorkspace("CUSTOMER");
+                    userRoleRepository.save(defaultRole);
+                }
+                return processAuthentication(user.getPhoneNumber());
+            }
+
+            // Real JWT parsing (Option B stub)
+            String[] parts = googleToken.split("\\.");
+            if (parts.length < 2) throw new BusinessException("Invalid Google Token");
+            String payloadJson = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(payloadJson);
+            
+            String email = node.has("email") ? node.get("email").asText() : null;
+            String name = node.has("name") ? node.get("name").asText() : null;
+            
+            if (email == null) throw new BusinessException("Google token did not contain an email");
+            
+            User user = userRepository.findByEmail(email).orElse(null);
+            
+            if (user == null) {
+                user = new User();
+                user.setPhoneNumber("G-" + email);
+                user.setEmail(email);
+                if (name != null) {
+                    String[] nameParts = name.split(" ", 2);
+                    user.setFirstName(nameParts[0]);
+                    if (nameParts.length > 1) user.setLastName(nameParts[1]);
+                }
+                user = userRepository.save(user);
+                
+                UserRole defaultRole = new UserRole();
+                defaultRole.setUser(user);
+                defaultRole.setRole("CUSTOMER");
+                defaultRole.setWorkspace("CUSTOMER");
+                userRoleRepository.save(defaultRole);
+            }
+            
+            return processAuthentication(user.getPhoneNumber());
+        } catch (Exception e) {
+            log.error("Google Auth Failed", e);
+            throw new BusinessException("Google Authentication Failed: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
     public AuthResult loginWithPassword(String identifier, String password) {
         User user = userRepository.findByPhoneNumber(identifier)
                 .orElseThrow(() -> new BusinessException("Invalid credentials"));
@@ -112,7 +179,10 @@ public class AuthenticationEngineImpl implements AuthenticationEngine {
             defaultRole.setWorkspace("CUSTOMER");
             userRoleRepository.save(defaultRole);
             isNewUser = true;
+        } else if (Boolean.TRUE.equals(user.getIsBlocked())) {
+            throw new BusinessException("ACCOUNT_BLOCKED");
         }
+
 
         user.setLastLoginAt(Instant.now());
         userRepository.save(user);

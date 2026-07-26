@@ -35,12 +35,22 @@ export default function CustomerOrderStatusPage() {
     const fetchOrders = async () => {
         try {
             setLoading(true);
-            const res = await apiClient.get('/orders/my-orders');
-            // Filter to show active orders, or maybe all but sort active first
-            setOrders(res.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            const res = await apiClient.get('/orders/my-orders').catch(() => null);
+            let rawList = res && Array.isArray(res.data) ? res.data : [];
+            
+            // If empty, try fetching active orders as fallback
+            if (rawList.length === 0) {
+                const activeRes = await apiClient.get('/orders/active').catch(() => null);
+                if (activeRes && Array.isArray(activeRes.data)) {
+                    rawList = activeRes.data;
+                }
+            }
+
+            const sorted = rawList.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+            setOrders(sorted);
         } catch (error) {
             console.error("Failed to fetch orders", error);
-            toast.error("Could not load your orders.");
+            setOrders([]);
         } finally {
             setLoading(false);
         }
@@ -85,16 +95,16 @@ export default function CustomerOrderStatusPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-24">
-            <div className="sticky top-0 z-30 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 p-4 flex justify-between items-center">
+        <div className="min-h-screen bg-slate-950 text-white pb-24">
+            <div className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 p-4 flex justify-between items-center">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                        <ArrowLeft className="w-6 h-6" />
+                    <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
+                        <ArrowLeft className="w-6 h-6 text-white" />
                     </button>
-                    <h1 className="text-2xl font-bold">Track Order</h1>
+                    <h1 className="text-2xl font-bold text-white">Track Order</h1>
                 </div>
-                <button onClick={fetchOrders} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                    <RefreshCw className="w-5 h-5 text-blue-600" />
+                <button onClick={fetchOrders} className="p-2 hover:bg-slate-800 rounded-full transition-colors">
+                    <RefreshCw className="w-5 h-5 text-blue-400" />
                 </button>
             </div>
 
@@ -102,21 +112,21 @@ export default function CustomerOrderStatusPage() {
                 {loading ? (
                     <div className="text-center py-10 text-slate-500">Loading your orders...</div>
                 ) : orders.length === 0 ? (
-                    <div className="text-center py-10 text-slate-500">
-                        <p>No orders found.</p>
-                        <button onClick={() => navigate('/customer/menu')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-xl font-bold">Browse Menu</button>
+                    <div className="text-center py-10 text-slate-400">
+                        <p className="text-lg font-semibold">No orders found.</p>
+                        <button onClick={() => navigate('/customer/menu')} className="mt-4 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20">Browse Menu</button>
                     </div>
                 ) : (
                     orders.map(order => (
-                        <div key={order.id} className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 overflow-hidden relative">
+                        <div key={order.id} className="bg-slate-900 rounded-3xl shadow-xl border border-slate-800 p-6 overflow-hidden relative">
                             {/* Status Banner */}
-                            <div className="flex justify-between items-start mb-6 border-b border-slate-100 dark:border-slate-700 pb-4">
+                            <div className="flex justify-between items-start mb-6 border-b border-slate-800 pb-4">
                                 <div>
-                                    <p className="text-sm text-slate-500 font-semibold mb-1">Order #{order.id}</p>
-                                    <h2 className="text-xl font-bold dark:text-white">Table {order.tableNumber}</h2>
-                                    <p className="text-xs text-slate-400 mt-1">{new Date(order.createdAt).toLocaleTimeString()}</p>
+                                    <p className="text-xs text-amber-500 font-bold tracking-wider uppercase mb-1">Order #{order.id}</p>
+                                    <h2 className="text-2xl font-black text-white">Table {order.tableNumber}</h2>
+                                    <p className="text-xs text-slate-400 mt-1">{order.createdAt ? new Date(order.createdAt).toLocaleTimeString() : 'Recent'}</p>
                                 </div>
-                                <div className={`px-4 py-1.5 rounded-full border text-sm font-bold capitalize ${getStatusColor(order.status)}`}>
+                                <div className={`px-4 py-1.5 rounded-full border text-xs font-black uppercase tracking-wider ${getStatusColor(order.status)}`}>
                                     {order.status.toLowerCase()}
                                 </div>
                             </div>
@@ -124,16 +134,16 @@ export default function CustomerOrderStatusPage() {
                             {/* Items */}
                             <div className="space-y-3 mb-6">
                                 {order.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between text-slate-700 dark:text-slate-300">
-                                        <span><span className="font-bold text-slate-900 dark:text-white mr-2">{item.quantity}×</span> {item.menuItemName}</span>
-                                        <span className="font-medium text-slate-900 dark:text-white">${(item.subtotal || item.unitPrice * item.quantity || 0).toFixed(2)}</span>
+                                    <div key={idx} className="flex justify-between text-slate-300">
+                                        <span><span className="font-bold text-amber-400 mr-2">{item.quantity}×</span> {item.menuItemName}</span>
+                                        <span className="font-semibold text-white">${(item.subtotal || item.unitPrice * item.quantity || 0).toFixed(2)}</span>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-700 pt-4 mb-6">
-                                <span className="font-bold text-slate-900 dark:text-white text-lg">Total</span>
-                                <span className="font-black text-2xl text-slate-900 dark:text-white">${(order.totalAmount || 0).toFixed(2)}</span>
+                            <div className="flex justify-between items-center border-t border-slate-800 pt-4 mb-6">
+                                <span className="font-bold text-slate-400 text-base">Total Amount</span>
+                                <span className="font-black text-2xl text-emerald-400">${(order.totalAmount || 0).toFixed(2)}</span>
                             </div>
 
                             {/* Actions */}

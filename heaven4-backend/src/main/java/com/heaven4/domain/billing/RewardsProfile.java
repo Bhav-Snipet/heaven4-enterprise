@@ -60,7 +60,9 @@ public class RewardsProfile extends BaseEntity {
     }
 
     private void updateTier() {
-        if (totalLifetimeSpend.compareTo(new BigDecimal("1000")) >= 0) {
+        if (totalLifetimeSpend.compareTo(new BigDecimal("3000")) >= 0) {
+            this.tier = "DIAMOND";
+        } else if (totalLifetimeSpend.compareTo(new BigDecimal("1000")) >= 0) {
             this.tier = "GOLD";
         } else if (totalLifetimeSpend.compareTo(new BigDecimal("300")) >= 0) {
             this.tier = "SILVER";

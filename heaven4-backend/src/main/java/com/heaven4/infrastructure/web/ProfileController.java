@@ -20,22 +20,22 @@ public class ProfileController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private String getCurrentUserPhone() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
+    private Long getCurrentUserId() {
+        return Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
     }
 
     @GetMapping
     public ResponseEntity<User> getMyProfile() {
-        String phone = getCurrentUserPhone();
-        User user = userRepository.findByPhoneNumber(phone)
+        Long userId = getCurrentUserId();
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return ResponseEntity.ok(user);
     }
 
     @PutMapping
     public ResponseEntity<User> updateMyProfile(@RequestBody Map<String, String> updates) {
-        String phone = getCurrentUserPhone();
-        User user = userRepository.findByPhoneNumber(phone)
+        Long userId = getCurrentUserId();
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (updates.containsKey("firstName")) {
@@ -60,8 +60,8 @@ public class ProfileController {
 
     @DeleteMapping
     public ResponseEntity<Map<String, String>> softDeleteAccount() {
-        String phone = getCurrentUserPhone();
-        User user = userRepository.findByPhoneNumber(phone)
+        Long userId = getCurrentUserId();
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Soft delete: recoverable for 30 days

@@ -24,8 +24,11 @@ public class AdminController {
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
     private final MenuItemRepository menuItemRepository;
+    private final com.heaven4.domain.identity.repository.UnblockRequestRepository unblockRequestRepository;
+    private final com.heaven4.domain.billing.repository.RewardsProfileRepository rewardsProfileRepository;
 
     // --- USER MANAGEMENT ---
+
 
     @GetMapping("/users")
     @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'MANAGER')")
@@ -115,5 +118,74 @@ public class AdminController {
         menuItemRepository.save(item);
         return ResponseEntity.ok(Map.of("id", item.getId(), "isAvailable", item.getIsAvailable(),
                 "name", item.getName()));
+    }
+
+    // --- BLOCK / UNBLOCK ---
+
+    @PutMapping("/users/{userId}/block")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'MANAGER')")
+    public ResponseEntity<Map<String, Object>> toggleBlockUser(@PathVariable Long userId, @RequestBody Map<String, Boolean> body) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        boolean block = body.getOrDefault("block", true);
+        
+        // Prevent blocking OWNER
+        if (block && userRoleRepository.findByUserIdAndActiveTrue(userId).stream().anyMatch(r -> r.getRole().equals("OWNER"))) {
+            throw new RuntimeException("Cannot block an OWNER");
+        }
+        
+        user.setIsBlocked(block);
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("message", block ? "User blocked" : "User unblocked", "isBlocked", block));
+    }
+
+    @GetMapping("/unblock-requests")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public ResponseEntity<List<com.heaven4.domain.identity.entity.UnblockRequest>> getUnblockRequests() {
+        return ResponseEntity.ok(unblockRequestRepository.findByStatus("PENDING"));
+    }
+
+    @PutMapping("/unblock-requests/{id}/approve")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public ResponseEntity<Map<String, String>> approveUnblockRequest(@PathVariable Long id) {
+        com.heaven4.domain.identity.entity.UnblockRequest req = unblockRequestRepository.findById(id).orElseThrow();
+        req.setStatus("APPROVED");
+        unblockRequestRepository.save(req);
+        
+        User user = req.getUser();
+        user.setIsBlocked(false);
+        userRepository.save(user);
+        
+        return ResponseEntity.ok(Map.of("message", "User unblocked successfully"));
+    }
+
+    @PutMapping("/unblock-requests/{id}/reject")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER')")
+    public ResponseEntity<Map<String, String>> rejectUnblockRequest(@PathVariable Long id) {
+        com.heaven4.domain.identity.entity.UnblockRequest req = unblockRequestRepository.findById(id).orElseThrow();
+        req.setStatus("REJECTED");
+        unblockRequestRepository.save(req);
+        return ResponseEntity.ok(Map.of("message", "Request rejected"));
+    }
+
+    @PutMapping("/users/{userId}/tier")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'MANAGER')")
+    public ResponseEntity<Map<String, String>> updateUserTier(@PathVariable Long userId, @RequestBody Map<String, String> body) {
+        
+        String newTier = body.get("tier");
+        if (newTier == null) throw new RuntimeException("Tier is required");
+        
+        com.heaven4.domain.billing.RewardsProfile membership = rewardsProfileRepository.findByUserId(userId).orElse(null);
+        if (membership == null) {
+            membership = new com.heaven4.domain.billing.RewardsProfile();
+            User u = userRepository.findById(userId).orElseThrow();
+            membership.setUser(u);
+            membership.setPointsBalance(0);
+            membership.setTotalLifetimeSpend(java.math.BigDecimal.ZERO);
+        }
+        
+        membership.setTier(newTier.toUpperCase());
+        rewardsProfileRepository.save(membership);
+        
+        return ResponseEntity.ok(Map.of("message", "Membership tier updated to " + newTier));
     }
 }

@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 
 /**
  * A custom hook to connect to the Heaven4 WebSocket broker and subscribe to the /topic/operations channel.
  * Pass a callback function that will be executed whenever a message is received.
  */
 export function useOperationsWebSocket(onMessage: (message: any) => void) {
+    const { playSound } = useAudioAlerts();
+
     useEffect(() => {
         const client = new Client({
             webSocketFactory: () => new SockJS('http://localhost:8085/ws'),
@@ -15,6 +18,20 @@ export function useOperationsWebSocket(onMessage: (message: any) => void) {
                     if (msg.body) {
                         try {
                             const parsed = JSON.parse(msg.body);
+                            
+                            // Audio routing based on event type
+                            if (parsed.type === 'NEW_ORDER') {
+                                playSound('new_order');
+                            } else if (parsed.type === 'ORDER_PREPARING') {
+                                playSound('preparing');
+                            } else if (parsed.type === 'ORDER_COMPLETED' || parsed.type === 'ORDER_READY') {
+                                playSound('completed');
+                            } else if (parsed.type === 'NEW_COMPLAINT') {
+                                playSound('complaint');
+                            } else if (parsed.type === 'WAITER_CALL') {
+                                playSound('waiter_call');
+                            }
+
                             onMessage(parsed);
                         } catch (e) {
                             onMessage(msg.body);
@@ -37,5 +54,5 @@ export function useOperationsWebSocket(onMessage: (message: any) => void) {
                 client.deactivate();
             }
         };
-    }, [onMessage]);
+    }, [onMessage, playSound]);
 }

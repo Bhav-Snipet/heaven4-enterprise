@@ -21,6 +21,8 @@ import jakarta.validation.constraints.NotBlank;
 public class AuthController {
 
     private final AuthenticationEngine authEngine;
+    private final com.heaven4.domain.identity.repository.UserRepository userRepository;
+    private final com.heaven4.domain.identity.repository.UnblockRequestRepository unblockRequestRepository;
 
     @PostMapping("/request-otp")
     @Operation(summary = "Request OTP", description = "Generates and sends an OTP to the given phone number")
@@ -48,6 +50,42 @@ public class AuthController {
     public ApiResponse<AuthResult> loginWithPassword(@Valid @RequestBody PasswordLoginRequest request) {
         AuthResult result = authEngine.loginWithPassword(request.getIdentifier(), request.getPassword());
         return ApiResponse.success("Authentication successful", result);
+    }
+
+    @PostMapping("/google")
+    @Operation(summary = "Login with Google", description = "Login using Google token")
+    public ApiResponse<AuthResult> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
+        AuthResult result = authEngine.loginWithGoogle(request.getToken());
+        return ApiResponse.success("Google Authentication successful", result);
+    }
+
+    @PostMapping("/unblock-request")
+    @Operation(summary = "Submit Unblock Request", description = "Submit a reason to be unblocked")
+    public ApiResponse<String> submitUnblockRequest(@RequestBody UnblockRequestDto request) {
+        
+        com.heaven4.domain.identity.entity.User user = userRepository.findByPhoneNumber(request.getIdentifier())
+            .orElseGet(() -> userRepository.findByEmail(request.getIdentifier()).orElse(null));
+            
+        if (user == null) {
+            return ApiResponse.success("If the account exists and is blocked, the request will be submitted", null);
+        }
+        
+        if (!Boolean.TRUE.equals(user.getIsBlocked())) {
+            return ApiResponse.success("Account is not blocked", null);
+        }
+        
+        com.heaven4.domain.identity.entity.UnblockRequest unblockRequest = new com.heaven4.domain.identity.entity.UnblockRequest();
+        unblockRequest.setUser(user);
+        unblockRequest.setReason(request.getReason());
+        unblockRequestRepository.save(unblockRequest);
+        
+        return ApiResponse.success("Unblock request submitted successfully", null);
+    }
+
+    @Data
+    public static class UnblockRequestDto {
+        private String identifier;
+        private String reason;
     }
 
     @Data
@@ -78,5 +116,11 @@ public class AuthController {
         
         @NotBlank(message = "Password is required")
         private String password;
+    }
+
+    @Data
+    public static class GoogleLoginRequest {
+        @NotBlank(message = "Google token is required")
+        private String token;
     }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, PieChart as PieChartIcon, Calendar, AlertCircle } from 'lucide-react';
+import { BarChart3, PieChart as PieChartIcon, Calendar, AlertCircle, FileText, Download } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
@@ -9,7 +9,17 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8B5CF6'];
 export default function OwnerReportsPage() {
     const [period, setPeriod] = useState('7d');
     const [orders, setOrders] = useState<any[]>([]);
+    const [reports, setReports] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const fetchReports = async () => {
+        try {
+            const res = await apiClient.get('/owner/finance/reports');
+            setReports(res.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -23,6 +33,7 @@ export default function OwnerReportsPage() {
             }
         };
         fetchOrders();
+        fetchReports();
     }, []);
 
     // Aggregate revenue by date string
@@ -135,6 +146,78 @@ export default function OwnerReportsPage() {
                     </div>
                 </div>
             )}
+            {/* Historical Reports */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold">Historical Encrypted Reports</h2>
+                    <button 
+                        onClick={async () => {
+                            try {
+                                await apiClient.post('/owner/finance/reports/generate');
+                                toast.success('Report generated successfully!');
+                                fetchReports();
+                            } catch (e) {
+                                toast.error('Failed to generate report');
+                            }
+                        }}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl flex items-center gap-2 transition-colors"
+                    >
+                        <FileText className="w-4 h-4" /> Generate Now
+                    </button>
+                </div>
+                
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="border-b border-slate-800 text-slate-500 text-sm">
+                                <th className="pb-3 font-medium">Filename</th>
+                                <th className="pb-3 font-medium">Date</th>
+                                <th className="pb-3 font-medium text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {reports.map((filename: string) => {
+                                const parts = filename.split('_');
+                                const dateStr = parts.length > 2 ? parts[2] : 'Unknown';
+                                return (
+                                    <tr key={filename} className="border-b border-slate-800/50 hover:bg-slate-800/20">
+                                        <td className="py-4 font-medium text-slate-300">{filename}</td>
+                                        <td className="py-4 text-slate-400">{dateStr}</td>
+                                        <td className="py-4 text-right">
+                                            <button 
+                                                onClick={async () => {
+                                                    try {
+                                                        const res = await apiClient.get(`/owner/finance/reports/download/${filename}`, { responseType: 'blob' });
+                                                        const url = window.URL.createObjectURL(new Blob([res.data]));
+                                                        const link = document.createElement('a');
+                                                        link.href = url;
+                                                        link.setAttribute('download', filename);
+                                                        document.body.appendChild(link);
+                                                        link.click();
+                                                        link.remove();
+                                                    } catch (e) {
+                                                        toast.error('Failed to download report');
+                                                    }
+                                                }}
+                                                className="px-3 py-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 inline-flex"
+                                            >
+                                                <Download className="w-4 h-4" /> Download (.enc)
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {reports.length === 0 && (
+                                <tr>
+                                    <td colSpan={3} className="py-8 text-center text-slate-500">
+                                        No historical reports found. Reports are generated automatically at 11 PM every day.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }

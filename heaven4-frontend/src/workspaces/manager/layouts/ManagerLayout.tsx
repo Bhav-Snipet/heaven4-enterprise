@@ -1,10 +1,12 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, AlertCircle, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, AlertCircle, CheckCircle, Volume2, VolumeX } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
+import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 
 export default function ManagerLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { isMuted, toggleMute, playSound } = useAudioAlerts();
 
   const handleLogout = () => {
     logout();
@@ -22,12 +24,20 @@ export default function ManagerLayout() {
     <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row text-white">
       {/* Desktop Sidebar */}
       <aside className="w-full md:w-64 bg-slate-900 border-r border-white/10 hidden md:flex flex-col z-10">
-        <div className="p-6 border-b border-white/10">
+        <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-glow">
               <span className="font-bold text-white text-lg leading-none">M</span>
             </div>
             <h1 className="text-xl font-display font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Manager Ops</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={() => playSound('complaint')} title="Test Complaint Sound" className="p-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/30 transition-all">
+              🚨 Test
+            </button>
+            <button onClick={toggleMute} className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
           </div>
         </div>
         
@@ -71,7 +81,12 @@ export default function ManagerLayout() {
             </div>
             <h1 className="text-lg font-bold">Manager Ops</h1>
           </div>
-          <button onClick={handleLogout} className="text-slate-400"><LogOut className="w-5 h-5" /></button>
+          <div className="flex items-center gap-3">
+            <button onClick={toggleMute} className="text-slate-400 hover:text-white">
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+            <button onClick={handleLogout} className="text-slate-400"><LogOut className="w-5 h-5" /></button>
+          </div>
         </header>
         <Outlet />
       </main>

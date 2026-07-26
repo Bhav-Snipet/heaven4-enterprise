@@ -1,10 +1,12 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingBag, BarChart3, Settings, LogOut, Hexagon, DollarSign } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingBag, BarChart3, Settings, LogOut, Hexagon, DollarSign, Volume2, VolumeX, FileText, Clock } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
+import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 
 export default function OwnerLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { isMuted, toggleMute } = useAudioAlerts();
 
   const handleLogout = () => {
     logout();
@@ -14,16 +16,19 @@ export default function OwnerLayout() {
   const navItems = [
     { to: '/owner', icon: LayoutDashboard, label: 'Executive Dashboard', end: true },
     { to: '/owner/orders', icon: ShoppingBag, label: 'Order History' },
-    { to: '/owner/staff', icon: Users, label: 'Staff & Team' },
+    { to: '/owner/staff', icon: Users, label: 'Staff Management' },
+    { to: '/owner/teams', icon: Users, label: 'Teams / Departments' },
+    { to: '/owner/attendance', icon: Clock, label: 'Attendance' },
     { to: '/owner/payroll', icon: DollarSign, label: 'Payroll & HR' },
-    { to: '/owner/reports', icon: BarChart3, label: 'Financial Reports' },
+    { to: '/owner/coupons', icon: FileText, label: 'Coupons' },
+    { to: '/owner/reports', icon: FileText, label: 'Reports' },
     { to: '/owner/settings', icon: Settings, label: 'Global Settings' },
   ];
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col md:flex-row bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-blend-soft-light">
       <aside className="w-full md:w-72 bg-black/80 backdrop-blur-xl shadow-2xl hidden md:flex flex-col border-r border-slate-800 z-10">
-        <div className="p-6 border-b border-slate-800">
+        <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gold-400 to-amber-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
               <Hexagon className="w-6 h-6 text-black fill-gold-400" />
@@ -33,6 +38,9 @@ export default function OwnerLayout() {
               <p className="text-xs text-slate-500 font-bold tracking-widest uppercase">HQ Portal</p>
             </div>
           </div>
+          <button onClick={toggleMute} className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+          </button>
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
@@ -73,7 +81,12 @@ export default function OwnerLayout() {
             <Hexagon className="w-6 h-6 text-gold-400" />
             <h1 className="text-lg font-bold text-gold-400">Heaven4 HQ</h1>
           </div>
-          <button onClick={handleLogout} className="text-slate-400 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
+          <div className="flex items-center gap-3">
+            <button onClick={toggleMute} className="text-slate-400 hover:text-white">
+              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </button>
+            <button onClick={handleLogout} className="text-slate-400 hover:text-red-400"><LogOut className="w-5 h-5" /></button>
+          </div>
         </header>
         <div className="w-full h-full max-w-7xl mx-auto p-4 md:p-8">
             <Outlet />

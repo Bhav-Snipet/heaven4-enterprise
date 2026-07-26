@@ -3,6 +3,8 @@ import { ThemeProvider } from '@/core/theme/ThemeProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from '@/core/auth/AuthProvider';
+import { AudioProvider } from '@/core/contexts/AudioProvider';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,12 +18,16 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light" storageKey="heaven4-theme">
-        <AuthProvider>
-          <AppRouter />
-          <Toaster position="top-right" />
-        </AuthProvider>
-      </ThemeProvider>
+      <GoogleOAuthProvider clientId="1234567890-mockclientid.apps.googleusercontent.com">
+        <ThemeProvider defaultTheme="light" storageKey="heaven4-theme">
+          <AuthProvider>
+            <AudioProvider>
+              <AppRouter />
+              <Toaster position="top-right" />
+            </AudioProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </GoogleOAuthProvider>
     </QueryClientProvider>
   );
 }

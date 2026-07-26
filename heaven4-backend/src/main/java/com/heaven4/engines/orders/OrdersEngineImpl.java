@@ -246,6 +246,48 @@ public class OrdersEngineImpl implements OrdersEngine {
         return orderDto;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public OrderDto getTableBill(String tableNo) {
+        List<Order> tableOrders = orderRepository.findAll().stream()
+                .filter(o -> tableNo.equalsIgnoreCase(o.getTableNumber()) && 
+                        o.getStatus() != com.heaven4.domain.orders.entity.OrderStatus.CANCELLED)
+                .collect(Collectors.toList());
+
+        if (tableOrders.isEmpty()) {
+            return OrderDto.builder()
+                    .tableNumber(tableNo)
+                    .totalAmount(BigDecimal.ZERO)
+                    .items(List.of())
+                    .status(com.heaven4.domain.orders.entity.OrderStatus.PENDING)
+                    .build();
+        }
+
+        List<OrderItemDto> aggregatedItems = new java.util.ArrayList<>();
+        BigDecimal grandTotal = BigDecimal.ZERO;
+
+        for (Order order : tableOrders) {
+            OrderDto dto = mapToDto(order);
+            if (dto.getItems() != null) {
+                aggregatedItems.addAll(dto.getItems());
+            }
+            if (order.getTotalAmount() != null) {
+                grandTotal = grandTotal.add(order.getTotalAmount());
+            }
+        }
+
+        Order mainOrder = tableOrders.get(0);
+        return OrderDto.builder()
+                .id(mainOrder.getId())
+                .tableNumber(tableNo)
+                .customerName(mainOrder.getCustomer() != null ? mainOrder.getCustomer().getFirstName() : "Table " + tableNo)
+                .status(mainOrder.getStatus())
+                .totalAmount(grandTotal)
+                .createdAt(mainOrder.getCreatedAt())
+                .items(aggregatedItems)
+                .build();
+    }
+
     private OrderDto mapToDto(Order order) {
         List<OrderItemDto> itemDtos = order.getItems().stream()
                 .map(item -> OrderItemDto.builder()

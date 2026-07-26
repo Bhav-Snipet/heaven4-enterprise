@@ -1,11 +1,12 @@
 package com.heaven4.engines.payment;
 
+import com.heaven4.core.exception.BusinessException;
 import com.heaven4.domain.billing.Invoice;
+import com.heaven4.domain.billing.repository.InvoiceRepository;
 import com.heaven4.domain.orders.entity.Order;
 import com.heaven4.domain.orders.entity.OrderStatus;
-import com.heaven4.engines.membership.MembershipEngine;
-import com.heaven4.domain.billing.repository.InvoiceRepository;
 import com.heaven4.domain.orders.repository.OrderRepository;
+import com.heaven4.engines.membership.MembershipEngine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,22 +26,25 @@ public class BillingEngineImpl implements BillingEngine {
 
     @Override
     @Transactional
-    public Invoice processCheckout(Long orderId, BigDecimal tipAmount, String paymentMethod) {
+    public Invoice processCheckout(Long orderId, BigDecimal tipAmount, BigDecimal discountPercentage, String paymentMethod) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
-        
-        if (order.getStatus() != OrderStatus.READY && order.getStatus() != OrderStatus.PENDING && order.getStatus() != OrderStatus.PREPARING) {
-            throw new RuntimeException("Order is in invalid state for checkout: " + order.getStatus());
+                .orElseThrow(() -> new BusinessException("Order not found"));
+
+        if (order.getStatus() == OrderStatus.COMPLETED || order.getStatus() == OrderStatus.CANCELLED) {
+            throw new BusinessException("Order is already " + order.getStatus());
         }
 
         BigDecimal subtotal = order.getTotalAmount();
-        BigDecimal taxAmount = subtotal.multiply(new BigDecimal("0.08")).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal discountAmount = subtotal.multiply(discountPercentage);
+        BigDecimal discountedSubtotal = subtotal.subtract(discountAmount);
+        
+        BigDecimal taxAmount = discountedSubtotal.multiply(new BigDecimal("0.08")).setScale(2, RoundingMode.HALF_UP);
         
         if (tipAmount == null) {
             tipAmount = BigDecimal.ZERO;
         }
         
-        BigDecimal totalAmount = subtotal.add(taxAmount).add(tipAmount);
+        BigDecimal totalAmount = discountedSubtotal.add(taxAmount).add(tipAmount);
 
         Invoice invoice = new Invoice();
         invoice.setOrder(order);
