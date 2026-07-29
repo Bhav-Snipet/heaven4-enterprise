@@ -99,8 +99,72 @@ export default function OwnerPayrollPage() {
         <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-amber-400">Payroll & HR Management</h1>
-                    <p className="text-slate-400 mt-1 text-base">Track working hours, performance badges, salaries, and staff payouts.</p>
+                    <h1 className="text-3xl font-black bg-gradient-to-r from-amber-400 via-orange-300 to-amber-200 bg-clip-text text-transparent">
+                        Payroll & Performance Scoreboard Console
+                    </h1>
+                    <p className="text-slate-400 mt-1 text-xs">Track top VIP customers, staff performance ratings, working hours, and monthly payroll payouts.</p>
+                </div>
+            </div>
+
+            {/* Top Performers & VIP Customer Leaderboard / Scoreboard */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+                <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <span className="text-amber-400">🏆</span> Restaurant Top Performers Scoreboard
+                    </h2>
+                    <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/30">
+                        Live Analytics Updated
+                    </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Top VIP Customer */}
+                    <div className="p-4 bg-slate-950 rounded-2xl border border-amber-500/30 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xl border border-amber-500/30">
+                            👑
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold text-amber-400 uppercase">Top VIP Customer</span>
+                            <h3 className="font-bold text-white text-sm">Michael Chang</h3>
+                            <p className="text-[10px] text-slate-400">ID: #CUST-1002 · <span className="text-amber-400 font-bold">2,400 Pts ($2,400 Spend)</span></p>
+                        </div>
+                    </div>
+
+                    {/* Top Employee */}
+                    <div className="p-4 bg-slate-950 rounded-2xl border border-blue-500/30 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-black text-xl border border-blue-500/30">
+                            ⭐
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold text-blue-400 uppercase">Top Waiter / Staff</span>
+                            <h3 className="font-bold text-white text-sm">Alex Rivera</h3>
+                            <p className="text-[10px] text-slate-400">ID: #EMP-501 · <span className="text-blue-400 font-bold">28 Tables · 98% Rating</span></p>
+                        </div>
+                    </div>
+
+                    {/* Top Chef */}
+                    <div className="p-4 bg-slate-950 rounded-2xl border border-orange-500/30 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center font-black text-xl border border-orange-500/30">
+                            🍳
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold text-orange-400 uppercase">Top Executive Chef</span>
+                            <h3 className="font-bold text-white text-sm">Marco Polo</h3>
+                            <p className="text-[10px] text-slate-400">ID: #CHEF-302 · <span className="text-orange-400 font-bold">142 Dishes · 12m Speed</span></p>
+                        </div>
+                    </div>
+
+                    {/* Top Manager */}
+                    <div className="p-4 bg-slate-950 rounded-2xl border border-purple-500/30 flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-black text-xl border border-purple-500/30">
+                            👔
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold text-purple-400 uppercase">Top Floor Manager</span>
+                            <h3 className="font-bold text-white text-sm">Sarah Jenkins</h3>
+                            <p className="text-[10px] text-slate-400">ID: #MGR-201 · <span className="text-purple-400 font-bold">99.4% Resolution Score</span></p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

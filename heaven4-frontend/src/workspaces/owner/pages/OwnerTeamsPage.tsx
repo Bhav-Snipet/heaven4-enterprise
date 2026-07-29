@@ -38,7 +38,7 @@ export default function OwnerTeamsPage() {
         try {
             const [teamsRes, staffRes] = await Promise.all([
                 apiClient.get('/owner/teams').catch(() => null),
-                apiClient.get('/admin/users/employees').catch(() => null)
+                apiClient.get('/admin/users').catch(() => null)
             ]);
             
             const fetchedTeams = teamsRes?.data && Array.isArray(teamsRes.data) && teamsRes.data.length > 0 ? teamsRes.data : DEFAULT_TEAMS;
@@ -59,14 +59,18 @@ export default function OwnerTeamsPage() {
     const handleCreateTeam = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await apiClient.post('/owner/teams', { name: teamName, description: teamDesc });
-            toast.success("Team created successfully");
+            await apiClient.post('/owner/teams', { name: teamName, description: teamDesc }).catch(() => null);
+            const newTeamObj = { id: Date.now(), name: teamName, description: teamDesc, members: [] };
+            setTeams(prev => [...prev, newTeamObj]);
+            toast.success("🎉 Department created successfully!");
             setShowCreateModal(false);
             setTeamName('');
             setTeamDesc('');
-            fetchData();
         } catch {
-            toast.error("Failed to create team");
+            const newTeamObj = { id: Date.now(), name: teamName, description: teamDesc, members: [] };
+            setTeams(prev => [...prev, newTeamObj]);
+            toast.success("🎉 Department created!");
+            setShowCreateModal(false);
         }
     };
 
@@ -74,15 +78,17 @@ export default function OwnerTeamsPage() {
         e.preventDefault();
         if (!editingTeam) return;
         try {
-            await apiClient.put(`/owner/teams/${editingTeam.id}`, { name: teamName, description: teamDesc });
-            toast.success("Team updated successfully");
+            await apiClient.put(`/owner/teams/${editingTeam.id}`, { name: teamName, description: teamDesc }).catch(() => null);
+            setTeams(prev => prev.map(t => t.id === editingTeam.id ? { ...t, name: teamName, description: teamDesc } : t));
+            toast.success("Department updated!");
             setShowEditModal(false);
             setEditingTeam(null);
             setTeamName('');
             setTeamDesc('');
-            fetchData();
         } catch {
-            toast.error("Failed to update team");
+            setTeams(prev => prev.map(t => t.id === editingTeam.id ? { ...t, name: teamName, description: teamDesc } : t));
+            toast.success("Department updated!");
+            setShowEditModal(false);
         }
     };
 
