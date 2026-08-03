@@ -117,52 +117,46 @@ export default function OwnerPayrollPage() {
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Top VIP Customer */}
-                    <div className="p-4 bg-slate-950 rounded-2xl border border-amber-500/30 flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xl border border-amber-500/30">
-                            👑
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-bold text-amber-400 uppercase">Top VIP Customer</span>
-                            <h3 className="font-bold text-white text-sm">Michael Chang</h3>
-                            <p className="text-[10px] text-slate-400">ID: #CUST-1002 · <span className="text-amber-400 font-bold">2,400 Pts ($2,400 Spend)</span></p>
-                        </div>
-                    </div>
-
-                    {/* Top Employee */}
-                    <div className="p-4 bg-slate-950 rounded-2xl border border-blue-500/30 flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-black text-xl border border-blue-500/30">
-                            ⭐
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-bold text-blue-400 uppercase">Top Waiter / Staff</span>
-                            <h3 className="font-bold text-white text-sm">Alex Rivera</h3>
-                            <p className="text-[10px] text-slate-400">ID: #EMP-501 · <span className="text-blue-400 font-bold">28 Tables · 98% Rating</span></p>
-                        </div>
-                    </div>
-
-                    {/* Top Chef */}
-                    <div className="p-4 bg-slate-950 rounded-2xl border border-orange-500/30 flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center font-black text-xl border border-orange-500/30">
-                            🍳
-                        </div>
-                        <div>
-                            <span className="text-[10px] font-bold text-orange-400 uppercase">Top Executive Chef</span>
-                            <h3 className="font-bold text-white text-sm">Marco Polo</h3>
-                            <p className="text-[10px] text-slate-400">ID: #CHEF-302 · <span className="text-orange-400 font-bold">142 Dishes · 12m Speed</span></p>
+                {/* Leaderboard Scoreboard */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    {/* Top 3 VIP Customers */}
+                    <div className="lg:col-span-6 p-4 bg-slate-950 rounded-2xl border border-amber-500/30 space-y-2">
+                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block">👑 Top 3 Star VIP Customers</span>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="p-2.5 bg-slate-900 rounded-xl border border-amber-500/30">
+                                <p className="font-bold text-amber-400 text-xs">🥇 Michael C.</p>
+                                <p className="text-[10px] text-slate-400 font-mono">#CUST-1002</p>
+                                <p className="text-[10px] font-black text-emerald-400 mt-1">$2,400 Spend</p>
+                            </div>
+                            <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                                <p className="font-bold text-slate-200 text-xs">🥈 Sarah J.</p>
+                                <p className="text-[10px] text-slate-400 font-mono">#CUST-1001</p>
+                                <p className="text-[10px] font-black text-emerald-400 mt-1">$1,850 Spend</p>
+                            </div>
+                            <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                                <p className="font-bold text-amber-600 text-xs">🥉 Emily W.</p>
+                                <p className="text-[10px] text-slate-400 font-mono">#CUST-1003</p>
+                                <p className="text-[10px] font-black text-emerald-400 mt-1">$1,200 Spend</p>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Top Manager */}
-                    <div className="p-4 bg-slate-950 rounded-2xl border border-purple-500/30 flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-black text-xl border border-purple-500/30">
-                            👔
+                    {/* Top Star Performers (1 per Role) */}
+                    <div className="lg:col-span-6 grid grid-cols-3 gap-3">
+                        <div className="p-3 bg-slate-950 rounded-2xl border border-blue-500/30">
+                            <span className="text-[9px] font-bold text-blue-400 uppercase block">⭐ Star Waiter (1)</span>
+                            <h3 className="font-bold text-white text-xs mt-0.5">Alex Rivera</h3>
+                            <p className="text-[10px] text-blue-300 font-semibold mt-1">28 Tables · 98%</p>
                         </div>
-                        <div>
-                            <span className="text-[10px] font-bold text-purple-400 uppercase">Top Floor Manager</span>
-                            <h3 className="font-bold text-white text-sm">Sarah Jenkins</h3>
-                            <p className="text-[10px] text-slate-400">ID: #MGR-201 · <span className="text-purple-400 font-bold">99.4% Resolution Score</span></p>
+                        <div className="p-3 bg-slate-950 rounded-2xl border border-orange-500/30">
+                            <span className="text-[9px] font-bold text-orange-400 uppercase block">🍳 Star Chef (1)</span>
+                            <h3 className="font-bold text-white text-xs mt-0.5">Marco Polo</h3>
+                            <p className="text-[10px] text-orange-300 font-semibold mt-1">142 Dishes · 12m</p>
+                        </div>
+                        <div className="p-3 bg-slate-950 rounded-2xl border border-purple-500/30">
+                            <span className="text-[9px] font-bold text-purple-400 uppercase block">👔 Star Manager (1)</span>
+                            <h3 className="font-bold text-white text-xs mt-0.5">Sarah Jenkins</h3>
+                            <p className="text-[10px] text-purple-300 font-semibold mt-1">99.4% Score</p>
                         </div>
                     </div>
                 </div>

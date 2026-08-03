@@ -62,6 +62,31 @@ export default function KitchenDashboard() {
     const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
     const [shiftStart] = useState(new Date().toISOString());
     const [shiftElapsed, setShiftElapsed] = useState('0:00');
+
+    // Chef On-Duty Roster State
+    const [showChefModal, setShowChefModal] = useState(false);
+    const [chefPin, setChefPin] = useState('');
+    const [activeChefIndex, setActiveChefIndex] = useState(0);
+    const [chefs, setChefs] = useState([
+        { id: 1, name: 'Chef Marco Polo', role: 'Head Chef · Grill Line', pin: '1234', isOnDuty: true },
+        { id: 2, name: 'Cook Sanjay K.', role: 'Sous Chef · Pizza Oven', pin: '5678', isOnDuty: true },
+        { id: 3, name: 'Elena Rostova', role: 'Line Cook · Appetizers', pin: '9999', isOnDuty: false }
+    ]);
+
+    const handleToggleChefDuty = (e: React.FormEvent) => {
+        e.preventDefault();
+        const targetChef = chefs[activeChefIndex] ?? chefs[0];
+        if (!targetChef) return;
+        if (chefPin !== targetChef.pin) {
+            toast.error(`❌ Invalid Password/PIN for ${targetChef.name}!`);
+            return;
+        }
+        const updatedStatus = !targetChef.isOnDuty;
+        setChefs(prev => prev.map((c, i) => i === activeChefIndex ? { ...c, isOnDuty: updatedStatus } : c));
+        toast.success(`👨‍🍳 ${targetChef.name} is now ${updatedStatus ? 'ON-DUTY 🟢' : 'OFF-DUTY 🔴'}!`);
+        setShowChefModal(false);
+        setChefPin('');
+    };
     const getTimeAgo = (dateStr: string) => {
         const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
         if (mins < 1) return 'Just now';
@@ -234,34 +259,25 @@ export default function KitchenDashboard() {
                     <div className="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-4">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                                <User className="w-4 h-4 text-orange-400" /> On-Shift Kitchen Crew (3 Members)
+                                <User className="w-4 h-4 text-orange-400" /> On-Shift Kitchen Crew ({chefs.filter(c => c.isOnDuty).length} Active)
                             </h3>
-                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-full">
-                                🟢 Stations Active
-                            </span>
+                            <button 
+                                onClick={() => { setChefPin(''); setShowChefModal(true); }}
+                                className="px-3 py-1 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 font-bold text-[10px] rounded-xl border border-orange-500/40 flex items-center gap-1 transition-all"
+                            >
+                                👨‍🍳 Chef Duty Login / Logout
+                            </button>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                            <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
-                                <div>
-                                    <p className="font-bold text-white">Chef Marco Polo</p>
-                                    <p className="text-[10px] text-slate-400">Head Chef · Grill</p>
+                            {chefs.map((c) => (
+                                <div key={c.id} className={`p-2.5 rounded-xl border flex items-center justify-between ${c.isOnDuty ? 'bg-slate-950 border-emerald-500/40' : 'bg-slate-950/50 border-slate-800 opacity-60'}`}>
+                                    <div>
+                                        <p className="font-bold text-white">{c.name}</p>
+                                        <p className="text-[10px] text-slate-400">{c.role}</p>
+                                    </div>
+                                    <span className={`w-2.5 h-2.5 rounded-full ${c.isOnDuty ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
                                 </div>
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            </div>
-                            <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
-                                <div>
-                                    <p className="font-bold text-white">Cook Sanjay K.</p>
-                                    <p className="text-[10px] text-slate-400">Sous Chef · Pizza</p>
-                                </div>
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            </div>
-                            <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
-                                <div>
-                                    <p className="font-bold text-white">Elena Rostova</p>
-                                    <p className="text-[10px] text-slate-400">Beverage Specialist</p>
-                                </div>
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            </div>
+                            ))}
                         </div>
                     </div>
 
@@ -464,6 +480,52 @@ export default function KitchenDashboard() {
                             >
                                 Close
                             </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {/* Chef On-Duty Password Login / Logout Modal */}
+                {showChefModal && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                        onClick={() => setShowChefModal(false)}>
+                        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+                            className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl text-white space-y-4"
+                            onClick={e => e.stopPropagation()}>
+                            
+                            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                                <div>
+                                    <h3 className="text-lg font-black text-white flex items-center gap-2">
+                                        <User className="w-5 h-5 text-orange-400" /> Chef Duty Login / Logout
+                                    </h3>
+                                    <p className="text-xs text-slate-400">Select Chef profile & enter PIN to toggle duty status.</p>
+                                </div>
+                                <button onClick={() => setShowChefModal(false)} className="p-1.5 hover:bg-slate-800 rounded-full text-slate-400">✕</button>
+                            </div>
+
+                            <form onSubmit={handleToggleChefDuty} className="space-y-4 text-xs font-semibold">
+                                <div>
+                                    <label className="block text-slate-400 mb-1 font-bold">Select Chef Profile</label>
+                                    <select value={activeChefIndex} onChange={e => setActiveChefIndex(Number(e.target.value))}
+                                        className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold outline-none focus:border-orange-500">
+                                        {chefs.map((c, i) => (
+                                            <option key={c.id} value={i}>
+                                                {c.name} ({c.role}) — {c.isOnDuty ? 'Currently ON-DUTY 🟢' : 'OFF-DUTY 🔴'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-slate-400 mb-1 font-bold">Chef Security Password / PIN</label>
+                                    <input required type="password" placeholder="Enter PIN (e.g. 1234, 5678)..." value={chefPin} onChange={e => setChefPin(e.target.value)}
+                                        className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono font-black text-base outline-none focus:border-orange-500" />
+                                </div>
+
+                                <button type="submit" className="w-full py-3 bg-orange-600 hover:bg-orange-500 text-white font-black text-xs rounded-xl shadow-lg shadow-orange-600/30 transition-all">
+                                    {chefs[activeChefIndex]?.isOnDuty ? '🔴 Confirm Go OFF-DUTY' : '🟢 Confirm Go ON-DUTY'}
+                                </button>
+                            </form>
                         </motion.div>
                     </motion.div>
                 )}

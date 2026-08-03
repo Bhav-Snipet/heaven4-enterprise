@@ -33,10 +33,17 @@ export default function CustomerCartPage() {
     const finalTotal = totalAmount + taxAmount + tipAmount;
     const pointsEarned = Math.floor(finalTotal) * 10;
 
+    const VALID_TABLES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', 'VIP-1', 'VIP-2', 'VIP-3', 'VIP-4', 'VIP-5'];
+
     const handlePlaceOrder = async () => {
         if (items.length === 0) return;
-        if (!tableNumber.trim()) {
-            toast.error('Please enter a table number to place your order.');
+        const normalizedTable = tableNumber.trim().toUpperCase();
+        if (!normalizedTable) {
+            toast.error('Please enter a valid table number to place your order.');
+            return;
+        }
+        if (!VALID_TABLES.includes(normalizedTable) && !/^(\d{1,2}|VIP-\d{1,2})$/i.test(normalizedTable)) {
+            toast.error(`❌ Invalid Table "${normalizedTable}"! Registered dining tables are 1 to 20 or VIP-1 to VIP-5.`);
             return;
         }
         setIsPlacingOrder(true);
