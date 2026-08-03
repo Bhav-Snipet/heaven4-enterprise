@@ -20,15 +20,22 @@ export default function CustomerLayout() {
     navigate('/auth/login');
   };
 
+  const VALID_TABLES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', 'VIP-1', 'VIP-2', 'VIP-3', 'VIP-4', 'VIP-5'];
+
   const callWaiter = async (type: string) => {
-    if (!tableNo.trim()) {
+    const normalizedTable = tableNo.trim().toUpperCase();
+    if (!normalizedTable) {
         toast.error("Please enter your table number first");
         return;
     }
-    localStorage.setItem('heaven4_table_number', tableNo);
+    if (!VALID_TABLES.includes(normalizedTable) && !/^(\d{1,2}|VIP-\d{1,2})$/i.test(normalizedTable)) {
+        toast.error(`❌ Invalid Table "${normalizedTable}"! Registered dining tables are 1 to 20 or VIP-1 to VIP-5.`);
+        return;
+    }
+    localStorage.setItem('heaven4_table_number', normalizedTable);
     setIsCalling(true);
     try {
-        await apiClient.post(`/waiter/call/${tableNo}`, { type });
+        await apiClient.post(`/waiter/call/${normalizedTable}`, { type });
         toast.success(`Staff has been notified for ${type}`);
         setWaiterModal(false);
     } catch {
