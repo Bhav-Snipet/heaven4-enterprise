@@ -139,85 +139,84 @@ export default function CatalogPage() {
             <motion.div 
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="flex flex-col md:flex-row md:items-center justify-between mb-8 p-6 rounded-3xl bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)]"
+                className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl"
             >
                 <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300">
-                        Menu & Catalog
+                    <h1 className="text-3xl font-black bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-300 bg-clip-text text-transparent">
+                        Menu & Catalog Management
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Manage categories, items, and pricing globally.</p>
+                    <p className="text-slate-400 text-xs mt-1">Manage food categories, beverages, alcohol portion pricing, and dish availability.</p>
                 </div>
-                <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3">
                     <button 
                         onClick={handleKitchenLoadMode}
                         disabled={klmLoading}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg ${
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all border ${
                             kitchenLoadMode 
-                                ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-500/30' 
-                                : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                                ? 'bg-orange-500/20 border-orange-500/40 text-orange-400' 
+                                : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
                         }`}
                     >
-                        <Flame className="w-5 h-5" />
+                        <Flame className="w-4 h-4 text-orange-400" />
                         Kitchen Load Mode {kitchenLoadMode ? 'ON' : 'OFF'}
                     </button>
                     <button 
                         onClick={openNewCategoryModal}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-heaven-600 hover:bg-heaven-500 text-white font-medium transition-all shadow-lg shadow-heaven-500/30"
+                        className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition-all shadow-lg shadow-amber-500/30 flex items-center gap-2"
                     >
-                        <Plus className="w-5 h-5" />
-                        <span>Add Category</span>
+                        <Plus className="w-4 h-4" /> Add Category
                     </button>
                 </div>
             </motion.div>
 
             {isLoading ? (
                 <div className="flex justify-center p-20">
-                    <div className="w-10 h-10 border-4 border-heaven-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
                 </div>
             ) : categories.length === 0 ? (
-                <div className="text-center py-20 bg-white/20 dark:bg-white/5 backdrop-blur-md rounded-3xl border border-white/10">
-                    <div className="w-20 h-20 bg-heaven-100 dark:bg-heaven-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Plus className="w-10 h-10 text-heaven-500" />
+                <div className="text-center py-20 bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl p-8">
+                    <div className="w-16 h-16 bg-slate-950 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-800">
+                        <Plus className="w-8 h-8 text-amber-400" />
                     </div>
-                    <h2 className="text-xl font-semibold mb-2">No Categories Yet</h2>
-                    <p className="text-slate-500 max-w-md mx-auto mb-6">Start building your menu by adding your first category, like "Appetizers" or "Main Course".</p>
+                    <h2 className="text-xl font-bold text-white mb-2">No Categories Yet</h2>
+                    <p className="text-slate-400 text-xs max-w-md mx-auto mb-6">Start building your menu catalog by creating your first category.</p>
                     <button 
                         onClick={openNewCategoryModal}
-                        className="px-6 py-2 rounded-xl bg-heaven-600 text-white font-medium hover:bg-heaven-500 transition-colors"
+                        className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30"
                     >
-                        Create Category
+                        Create First Category
                     </button>
                 </div>
             ) : (
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Categories Sidebar */}
                     <div className="w-full lg:w-1/4 space-y-3">
-                        <div className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 pl-2">Categories</div>
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Categories</div>
                         {categories.map((cat) => (
                             <motion.div 
                                 key={cat.id}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setActiveTab(cat.id)}
-                                className={`p-4 rounded-2xl cursor-pointer transition-all border backdrop-blur-md flex justify-between items-center group
+                                className={`p-4 rounded-2xl cursor-pointer transition-all border flex justify-between items-center group
                                     ${activeTab === cat.id 
-                                        ? 'bg-heaven-500/10 border-heaven-500/30 shadow-[0_0_20px_rgba(99,102,241,0.15)] dark:bg-heaven-500/20' 
-                                        : 'bg-white/40 dark:bg-white/5 border-white/20 hover:bg-white/60 dark:hover:bg-white/10'
+                                        ? 'bg-blue-600/20 border-blue-500/50 shadow-lg text-white font-bold' 
+                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                     }`}
                             >
-                                <span className={`font-medium ${activeTab === cat.id ? 'text-heaven-600 dark:text-heaven-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                <span className={`font-bold text-xs ${activeTab === cat.id ? 'text-amber-400' : 'text-slate-200'}`}>
                                     {cat.name}
                                 </span>
                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); openEditCategoryModal(cat); }}
-                                        className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                        className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
                                     >
                                         <Edit2 className="w-4 h-4" />
                                     </button>
                                     <button 
                                         onClick={(e) => deleteCategory(cat.id, e)}
-                                        className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-500"
+                                        className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-400"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>

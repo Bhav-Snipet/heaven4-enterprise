@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Coffee, X, ShoppingBag, DollarSign, CheckCircle2, User, Clock, AlertTriangle, Crown, Target, Star, Phone, Edit, ShieldCheck } from 'lucide-react';
+import { Plus, Coffee, X, ShoppingBag, DollarSign, CheckCircle2, User, Clock, AlertTriangle, Crown, Target } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useOperationsWebSocket } from '@/core/hooks/useOperationsWebSocket';
 import { useAuth } from '@/core/auth/AuthProvider';
@@ -37,7 +37,6 @@ export default function EmployeeDashboard() {
     const [complaints, setComplaints] = useState<Complaint[]>([]);
     const [modal, setModal] = useState<ModalType>(null);
     const [selectedTable, setSelectedTable] = useState<TableData | null>(null);
-    const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
     const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
     const [menuItems, setMenuItems] = useState<MenuItem[]>(DEFAULT_ITEMS);
     const [activeCategory, setActiveCategory] = useState<number | null>(1);
@@ -357,7 +356,7 @@ export default function EmployeeDashboard() {
                                     <div className="flex gap-1.5">
                                         {tableComplaint && (
                                             <button
-                                                onClick={() => setSelectedComplaint(tableComplaint)}
+                                                onClick={() => setModal('complaint')}
                                                 className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 animate-pulse border border-red-500/30"
                                             >
                                                 <AlertTriangle className="w-3 h-3" /> Complaint

@@ -62,71 +62,71 @@ export default function AdminTablesPage() {
     };
 
     return (
-        <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
+        <div className="min-h-screen bg-slate-950 text-white p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+            <div className="flex justify-between items-center bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
-                        <QrCode className="w-8 h-8 text-blue-500" />
-                        Table QR Management
+                    <h1 className="text-3xl font-black bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-300 bg-clip-text text-transparent flex items-center gap-3">
+                        <QrCode className="w-8 h-8 text-blue-400" />
+                        Table QR Code & Floor Layout Management
                     </h1>
-                    <p className="text-slate-500 mt-1">Generate scannable QR codes for customers to identify their tables.</p>
+                    <p className="text-xs text-slate-400 mt-1">Generate scannable QR codes for customers to view the digital menu and place table orders.</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700">
-                        <h3 className="font-bold mb-4">Add New Table</h3>
+                    <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl space-y-4">
+                        <h3 className="font-bold text-lg text-white">Add New Dining Table</h3>
                         <form onSubmit={handleAddTable} className="space-y-4">
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Table Identifier</label>
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Table Identifier</label>
                                 <input 
                                     type="text" 
                                     value={newTableNumber}
                                     onChange={e => setNewTableNumber(e.target.value)}
                                     placeholder="e.g. 10 or VIP-3"
-                                    className="w-full mt-1 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                                    className="w-full mt-1.5 p-3 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold text-sm focus:border-blue-500 outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Capacity</label>
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Capacity (Seats)</label>
                                 <input 
                                     type="number" 
                                     value={newCapacity}
                                     onChange={e => setNewCapacity(Number(e.target.value))}
                                     min={1}
-                                    className="w-full mt-1 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                                    className="w-full mt-1.5 p-3 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold text-sm focus:border-blue-500 outline-none"
                                 />
                             </div>
-                            <button type="submit" disabled={!newTableNumber.trim()} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50">
-                                <Plus className="w-5 h-5" /> Add Table
+                            <button type="submit" disabled={!newTableNumber.trim()} className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30 text-xs disabled:opacity-50">
+                                <Plus className="w-4 h-4" /> Register Table
                             </button>
                         </form>
                     </div>
                 </div>
 
                 <div className="lg:col-span-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {tables.map(table => (
-                            <div key={table.id} className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col items-center text-center relative group">
-                                <button onClick={() => handleDelete(table.id)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                                    <Trash2 className="w-5 h-5" />
+                            <div key={table.id} className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl flex flex-col items-center text-center relative group">
+                                <button onClick={() => handleDelete(table.id)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-red-400 hover:bg-slate-950 rounded-xl transition-colors opacity-0 group-hover:opacity-100 border border-slate-800">
+                                    <Trash2 className="w-4 h-4" />
                                 </button>
                                 
-                                <h4 className="text-xl font-bold mb-1">Table {table.number}</h4>
-                                <p className="text-sm text-slate-500 mb-6">{table.capacity} Seats</p>
+                                <h4 className="text-2xl font-black text-amber-400 mb-1">Table {table.number}</h4>
+                                <p className="text-xs text-slate-400 font-semibold mb-4">{table.capacity} Guest Capacity</p>
                                 
-                                <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl mb-6 inline-block">
+                                <div className="bg-white p-4 rounded-2xl mb-5 border-2 border-slate-800 shadow-inner">
                                     <QRCodeSVG 
                                         id={`qr-${table.number}`}
                                         value={`${window.location.origin}/customer/menu?table=${table.number}`} 
-                                        size={150} 
+                                        size={140} 
                                         level="H" 
                                         includeMargin={true}
                                     />
                                 </div>
                                 
-                                <button onClick={() => printQR(table.number)} className="w-full py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-900 dark:text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all">
+                                <button onClick={() => printQR(table.number)} className="w-full py-2.5 bg-slate-950 hover:bg-slate-800 text-blue-400 hover:text-blue-300 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all border border-slate-800">
                                     <Printer className="w-4 h-4" /> Print QR Code
                                 </button>
                             </div>

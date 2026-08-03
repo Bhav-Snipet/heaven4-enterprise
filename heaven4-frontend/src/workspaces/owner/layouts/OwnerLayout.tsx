@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingBag, BarChart3, Settings, LogOut, Hexagon, DollarSign, Volume2, VolumeX, FileText, Clock } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingBag, Settings, LogOut, Hexagon, DollarSign, Volume2, VolumeX, FileText, Clock } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 

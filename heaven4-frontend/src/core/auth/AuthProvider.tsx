@@ -5,6 +5,8 @@ export interface UserInfo {
     displayName: string;
     role: string;
     workspace: string;
+    email?: string;
+    phoneNumber?: string;
 }
 
 interface AuthContextType {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, Search, User, Check, X } from 'lucide-react';
+import { DollarSign, Search, Check, X } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Gift, ShieldAlert, CheckCircle2, User, ChevronLeft, ChevronRight, Edit, Plus, Minus, RefreshCw } from 'lucide-react';
+import { Search, Gift, ShieldAlert, CheckCircle2, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 
@@ -25,7 +25,7 @@ const DEFAULT_CUSTOMERS: Customer[] = [
 export default function EmployeePointsOverridePage() {
     const [customers, setCustomers] = useState<Customer[]>(DEFAULT_CUSTOMERS);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(DEFAULT_CUSTOMERS[0]);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(DEFAULT_CUSTOMERS[0] || null);
     const [points, setPoints] = useState<number>(100);
     const [reason, setReason] = useState('Service delay appeasement credit');
     const [currentPage, setCurrentPage] = useState(1);
@@ -45,7 +45,7 @@ export default function EmployeePointsOverridePage() {
                         email: u.email || `customer${u.id || idx}@example.com`
                     }));
                     setCustomers(mapped);
-                    setSelectedCustomer(mapped[0]);
+                    setSelectedCustomer(mapped[0] || null);
                 }
             } catch {
                 console.warn("Using pre-populated registered customer database");

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Calendar, Trash2, Edit2, Check, Phone, ShieldCheck } from 'lucide-react';
+import { Mail, Trash2, Edit2, Check, Phone, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../../core/auth/AuthProvider';
 import apiClient from '../../../core/api/client';
 import toast from 'react-hot-toast';

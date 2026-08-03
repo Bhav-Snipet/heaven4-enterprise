@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Shield, RefreshCw, CheckCircle2, Lock, Unlock, Crown } from 'lucide-react';
+import { User, Shield, RefreshCw, CheckCircle2, Lock, Unlock } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 
@@ -20,7 +20,6 @@ interface UnblockRequest {
     createdAt: string;
 }
 
-const AVAILABLE_ROLES = ['CUSTOMER', 'EMPLOYEE', 'KITCHEN', 'MANAGER', 'ADMIN', 'OWNER'];
 const ROLE_COLORS: Record<string, string> = {
     CUSTOMER: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     EMPLOYEE: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
