@@ -231,12 +231,12 @@ export default function AdminUserManagementPage() {
                                         {activeTab === 'CUSTOMERS' && (
                                             <select 
                                                 onChange={(e) => updateTier(user.id, e.target.value)}
-                                                className="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-800 bg-slate-950 text-amber-400 outline-none focus:border-amber-500"
+                                                className="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-800 bg-slate-950 text-amber-400 outline-none focus:border-amber-500 cursor-pointer"
                                             >
-                                                <option value="">Update Tier...</option>
-                                                <option value="SILVER">Silver</option>
-                                                <option value="GOLD">Gold</option>
-                                                <option value="DIAMOND">Diamond</option>
+                                                <option value="" className="bg-slate-900 text-slate-400">Update Tier...</option>
+                                                <option value="SILVER" className="bg-slate-900 text-slate-200">Silver</option>
+                                                <option value="GOLD" className="bg-slate-900 text-amber-400 font-bold">Gold</option>
+                                                <option value="DIAMOND" className="bg-slate-900 text-indigo-300 font-bold">Diamond</option>
                                             </select>
                                         )}
                                         <button 

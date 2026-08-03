@@ -399,7 +399,7 @@ export default function ManagerDashboard() {
                                     <select value={newItemName} onChange={e => setNewItemName(e.target.value)}
                                         className="col-span-8 p-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white font-bold outline-none">
                                         {CATALOG_PRESETS.map((p, idx) => (
-                                            <option key={idx} value={p.name}>{p.name} (${p.price.toFixed(2)})</option>
+                                            <option key={idx} value={p.name} className="bg-slate-900 text-white font-bold">{p.name} (${p.price.toFixed(2)})</option>
                                         ))}
                                     </select>
                                     <input type="number" min={1} max={10} value={newItemQty} onChange={e => setNewItemQty(Number(e.target.value))}

@@ -509,7 +509,7 @@ export default function KitchenDashboard() {
                                     <select value={activeChefIndex} onChange={e => setActiveChefIndex(Number(e.target.value))}
                                         className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold outline-none focus:border-orange-500">
                                         {chefs.map((c, i) => (
-                                            <option key={c.id} value={i}>
+                                            <option key={c.id} value={i} className="bg-slate-900 text-white font-bold">
                                                 {c.name} ({c.role}) — {c.isOnDuty ? 'Currently ON-DUTY 🟢' : 'OFF-DUTY 🔴'}
                                             </option>
                                         ))}
