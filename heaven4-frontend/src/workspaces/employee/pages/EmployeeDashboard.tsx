@@ -18,10 +18,14 @@ const DEFAULT_CATEGORIES: Category[] = [
     { id: 1, name: '🍕 Gourmet Pizzas & Food' },
     { id: 2, name: '🥤 Soft Drinks & Beverages' },
     { id: 3, name: '🥃 Fine Spirits & Alcohol (18+)' },
-    { id: 4, name: '🍰 Desserts & Sweets' }
+    { id: 4, name: '🎉 VIP Rooftop Event Menu' },
+    { id: 5, name: '🍰 Desserts & Sweets' }
 ];
 
 const DEFAULT_ITEMS: MenuItem[] = [
+    { id: 9001, categoryId: 4, name: '🎷 Truffle Mushroom Bruschetta (Event Special)', basePrice: 16.00, isAvailable: true },
+    { id: 9002, categoryId: 4, name: '🍷 Reserve Cabernet Sauvignon (Event Wine)', basePrice: 18.00, isAvailable: true, isBeverage: true },
+    { id: 9003, categoryId: 4, name: '🍸 Event Signature Elderflower Cocktail', basePrice: 14.00, isAvailable: true, isBeverage: true },
     { id: 8001, categoryId: 3, name: 'Hoppy Citrus Craft IPA Beer (Pint)', basePrice: 8.50, isAvailable: true, isBeverage: true },
     { id: 8002, categoryId: 3, name: 'Single Malt Aged Reserve Whiskey (60ml)', basePrice: 14.00, isAvailable: true, isBeverage: true },
     { id: 8003, categoryId: 3, name: 'Botanical Tonic & Gin (90ml)', basePrice: 11.50, isAvailable: true, isBeverage: true },

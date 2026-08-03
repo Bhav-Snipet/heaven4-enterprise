@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ShoppingBag, Settings, LogOut, Hexagon, DollarSign, Volume2, VolumeX, FileText, Clock } from 'lucide-react';
+import { LayoutDashboard, Users, ShoppingBag, Settings, LogOut, Hexagon, DollarSign, Volume2, VolumeX, FileText, Clock, Sparkles } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 
@@ -15,6 +15,7 @@ export default function OwnerLayout() {
 
   const navItems = [
     { to: '/owner', icon: LayoutDashboard, label: 'Executive Dashboard', end: true },
+    { to: '/owner/events', icon: Sparkles, label: 'Events Studio' },
     { to: '/owner/orders', icon: ShoppingBag, label: 'Order History' },
     { to: '/owner/staff', icon: Users, label: 'Staff Management' },
     { to: '/owner/teams', icon: Users, label: 'Teams / Departments' },

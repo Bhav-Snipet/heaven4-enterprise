@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ManagerDashboard from './pages/ManagerDashboard';
 import ManagerComplaintsPage from './pages/ManagerComplaintsPage';
 import ManagerPointsOverridePage from './pages/ManagerPointsOverridePage';
+import ManagerEventsPage from './pages/ManagerEventsPage';
 import UserSettingsPage from '@/shared/components/UserSettingsPage';
 
 export default function ManagerRouter() {
@@ -9,6 +10,7 @@ export default function ManagerRouter() {
     <Routes>
       <Route path="/" element={<Navigate to="/manager/dashboard" replace />} />
       <Route path="dashboard" element={<ManagerDashboard />} />
+      <Route path="events" element={<ManagerEventsPage />} />
       <Route path="complaints" element={<ManagerComplaintsPage />} />
       <Route path="approvals" element={
         <div className="p-8 text-center text-slate-400 mt-20">

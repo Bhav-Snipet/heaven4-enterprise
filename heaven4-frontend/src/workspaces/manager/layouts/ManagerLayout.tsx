@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, AlertCircle, CheckCircle, Volume2, VolumeX } from 'lucide-react';
+import { LayoutDashboard, LogOut, AlertCircle, CheckCircle, Volume2, VolumeX, Sparkles } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 
@@ -15,6 +15,7 @@ export default function ManagerLayout() {
 
   const navItems = [
     { to: '/manager/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/manager/events', icon: Sparkles, label: 'Events Host Control' },
     { to: '/manager/complaints', icon: AlertCircle, label: 'Complaints' },
     { to: '/manager/approvals', icon: CheckCircle, label: 'Approvals' },
     { to: '/manager/points-override', icon: CheckCircle, label: 'Points Override' },

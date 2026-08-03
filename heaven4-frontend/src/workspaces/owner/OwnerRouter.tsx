@@ -8,12 +8,14 @@ import OwnerReportsPage from './pages/OwnerReportsPage';
 import OwnerSettingsPage from './pages/OwnerSettingsPage';
 import OwnerPayrollPage from './pages/OwnerPayrollPage';
 import OwnerCouponsPage from './pages/OwnerCouponsPage';
+import OwnerEventsPage from './pages/OwnerEventsPage';
 import UserSettingsPage from '@/shared/components/UserSettingsPage';
 
 export default function OwnerRouter() {
   return (
     <Routes>
       <Route path="/" element={<OwnerDashboard />} />
+      <Route path="events" element={<OwnerEventsPage />} />
       <Route path="orders" element={<OwnerOrdersPage />} />
       <Route path="staff" element={<OwnerStaffPage />} />
       <Route path="teams" element={<OwnerTeamsPage />} />

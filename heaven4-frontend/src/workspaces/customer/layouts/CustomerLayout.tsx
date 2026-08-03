@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
-import { Home, Award, ShoppingBag, LogOut, User, MessageSquare, Crown, Bell } from 'lucide-react';
+import { Home, Award, ShoppingBag, LogOut, User, MessageSquare, Crown, Bell, Sparkles } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,6 +40,7 @@ export default function CustomerLayout() {
 
   const navItems = [
     { to: '/customer/menu', icon: Home, label: 'Menu', end: true },
+    { to: '/customer/events', icon: Sparkles, label: 'Events' },
     { to: '/customer/membership', icon: Crown, label: 'VIP' },
     { to: '/customer/rewards', icon: Award, label: 'Rewards' },
     { to: '/customer/cart', icon: ShoppingBag, label: 'Cart', badge: items.length > 0 ? items.length : null },
