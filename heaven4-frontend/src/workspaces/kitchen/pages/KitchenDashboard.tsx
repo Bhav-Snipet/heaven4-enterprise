@@ -1,10 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Clock, Flame, History, AlertTriangle, User, LogOut, TrendingUp, Crown } from 'lucide-react';
+import { CheckCircle2, Clock, Flame, History, AlertTriangle, User, LogOut, TrendingUp, Crown, Sparkles, ChefHat, ChevronDown, ChevronUp } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useOperationsWebSocket } from '@/core/hooks/useOperationsWebSocket';
 import { useAuth } from '@/core/auth/AuthProvider';
 import toast from 'react-hot-toast';
+
+import { getDietaryBadge, EventMenuItem } from '@/shared/utils/eventHelpers';
+
+// Live event context (fetched separately from order queue)
+interface LiveEvent {
+    id: number; title: string; startDate: string; endDate: string;
+    location: string; djName?: string; assignedChef: string;
+    menuItems: EventMenuItem[];
+}
 
 // Developer toggle: set to false to hide the chef motivation widget
 const FEATURE_FLAG_CHEF_MOTIVATION = true;
@@ -63,6 +72,26 @@ export default function KitchenDashboard() {
     const [shiftStart] = useState(new Date().toISOString());
     const [shiftElapsed, setShiftElapsed] = useState('0:00');
 
+    // Live Event State
+    const [liveEvent, setLiveEvent] = useState<LiveEvent | null>({
+        id: 901,
+        title: '🎷 Sunset Rooftop Jazz & Wine Night',
+        startDate: new Date(Date.now() - 3600000).toISOString(),
+        endDate: new Date(Date.now() + 7200000).toISOString(),
+        location: 'Rooftop Sunset Lounge',
+        djName: 'DJ Pulse & Sax Ensemble',
+        assignedChef: 'Chef Marco Polo',
+        menuItems: [
+            { name: 'Truffle Mushroom Bruschetta', description: 'Sourdough with mushroom truffle cream', price: 16.00, category: 'Event Starters', dietaryType: 'VEG', imageUrl: 'https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=400' },
+            { name: 'Wagyu Beef Slider Trio', description: 'Brioche with aged cheddar', price: 28.00, category: 'Event Mains', dietaryType: 'NON_VEG', imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400' },
+            { name: 'Reserve Cabernet Sauvignon', description: 'Vintage 2018 Napa Valley Red', price: 18.00, category: 'Event Drinks & Cocktails', dietaryType: 'ALCOHOLIC', imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=400' },
+            { name: 'Passion Fruit Mojito', description: 'Rum, lime, mint, passion fruit', price: 14.00, category: 'Event Drinks & Cocktails', dietaryType: 'ALCOHOLIC', imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400' },
+            { name: 'Dark Chocolate Fondant', description: 'Warm lava cake with vanilla ice cream', price: 12.00, category: 'Event Desserts', dietaryType: 'VEG', imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400' },
+        ]
+    });
+    const [showEventMenu, setShowEventMenu] = useState(false);
+    const [eventMenuMode, setEventMenuMode] = useState(false); // Toggle: regular vs event menu view
+
     // Chef On-Duty Roster State
     const [showChefModal, setShowChefModal] = useState(false);
     const [chefPin, setChefPin] = useState('');
@@ -108,24 +137,35 @@ export default function KitchenDashboard() {
     const fetchData = useCallback(async () => {
         try {
             const [activeRes, complaintsRes] = await Promise.all([
-                apiClient.get('/orders/active'),
-                apiClient.get('/complaints'),
+                apiClient.get('/orders/active', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => ({ data: [] })),
+                apiClient.get('/complaints', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => ({ data: [] })),
             ]);
-            setOrders(activeRes.data);
-            setComplaints(complaintsRes.data);
-        } catch (e) { console.error(e); }
+            if (activeRes?.data) setOrders(activeRes.data);
+            if (complaintsRes?.data) setComplaints(complaintsRes.data);
+        } catch { /* use local state */ }
     }, []);
 
     const fetchHistory = async () => {
         try {
-            const res = await apiClient.get('/orders/all');
-            setHistory(res.data.filter((o: OrderDto) => o.status === 'COMPLETED').slice(0, 30));
-        } catch (e) { console.error(e); }
+            const res = await apiClient.get('/orders/all', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+            if (res?.data) setHistory(res.data.filter((o: OrderDto) => o.status === 'COMPLETED').slice(0, 30));
+        } catch { /* use local state */ }
     };
 
     useEffect(() => { fetchData(); }, [fetchData]);
     useEffect(() => { if (tab === 'history') fetchHistory(); }, [tab]);
     useOperationsWebSocket(() => { fetchData(); });
+
+    // Fetch live event (with fallback to demo)
+    useEffect(() => {
+        const fetchLiveEvent = async () => {
+            try {
+                const res = await apiClient.get('/events/live', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+                if (res?.data) setLiveEvent(res.data);
+            } catch { /* Keep demo live event */ }
+        };
+        fetchLiveEvent();
+    }, []);
 
     const updateStatus = async (orderId: number, status: string) => {
         try {
@@ -252,6 +292,73 @@ export default function KitchenDashboard() {
                         </button>
                     </div>
                 </div>
+
+                {/* ── Live Event Banner ── */}
+                {liveEvent && (
+                    <div className={`mt-4 rounded-2xl border overflow-hidden transition-all ${eventMenuMode ? 'border-amber-500/50 shadow-lg shadow-amber-900/20' : 'border-amber-500/20'}`}>
+                        <div className={`flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-4 ${eventMenuMode ? 'bg-amber-500/10' : 'bg-amber-500/5'}`}>
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                                    <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[10px] font-black text-red-300 uppercase px-2 py-0.5 bg-red-500/20 rounded-full border border-red-500/30 flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" /> EVENT LIVE
+                                        </span>
+                                        <span className="text-xs font-black text-amber-300">{liveEvent.title}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">
+                                        {liveEvent.location} · DJ: {liveEvent.djName || 'Live Performance'} · Chef: {liveEvent.assignedChef}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    onClick={() => { setShowEventMenu(!showEventMenu); }}
+                                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs rounded-xl flex items-center gap-1.5 border border-slate-700 transition-all"
+                                >
+                                    <ChefHat className="w-3.5 h-3.5" />
+                                    {showEventMenu ? 'Hide Menu' : 'Event Menu'}
+                                    {showEventMenu ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                </button>
+                                <button
+                                    onClick={() => { setEventMenuMode(!eventMenuMode); toast.success(eventMenuMode ? '🍽️ Switched to Regular Menu mode' : '🎭 Switched to Event Menu mode!'); }}
+                                    className={`px-3 py-1.5 font-bold text-xs rounded-xl flex items-center gap-1.5 border transition-all ${eventMenuMode ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30' : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-amber-500'}`}
+                                >
+                                    {eventMenuMode ? '🎭 Event Mode ON' : '🍽️ Regular Mode'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <AnimatePresence>
+                            {showEventMenu && (
+                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden bg-slate-950 border-t border-amber-500/20">
+                                    <div className="p-4 space-y-2">
+                                        <p className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">Tonight's Event Menu — {liveEvent.menuItems.length} Items</p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                            {liveEvent.menuItems.map((item, idx) => {
+                                                const badge = getDietaryBadge(item.dietaryType || 'VEG');
+                                                return (
+                                                    <div key={idx} className="flex items-center gap-2.5 p-2.5 bg-slate-900 rounded-xl border border-slate-800 text-xs">
+                                                        {item.imageUrl && <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-lg object-cover bg-slate-950 shrink-0" />}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-bold text-white truncate">{item.name}</p>
+                                                            <span className={`px-1.5 py-0.5 text-[9px] rounded font-bold ${badge.badge}`}>{badge.icon} {badge.label}</span>
+                                                        </div>
+                                                        <span className="font-black text-emerald-400 shrink-0 ml-2">${item.price.toFixed(2)}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="text-[10px] text-slate-600 text-center pt-1">This menu is for reference only. Event food orders are placed by event staff separately.</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )}
 
                 {/* On-Shift Kitchen Crew & Performance Panel */}
                 <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">

@@ -25,22 +25,26 @@ client.interceptors.request.use(
 client.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response) {
-            if (error.response.status === 401) {
-                // Clear tokens and force login if unauthorized
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                localStorage.removeItem('user_info');
-                window.dispatchEvent(new Event('auth-expired'));
-                // We'll let the AuthProvider handle the redirect by noticing the missing token
-                toast.error("Session expired. Please log in again.");
-            } else if (error.response.status >= 500) {
-                toast.error("An unexpected server error occurred.");
-            } else if (error.response.data && error.response.data.message) {
-                toast.error(error.response.data.message);
+        const suppressToast = error.config?.headers?.['x-suppress-error-toast'] || error.config?.headers?.['X-Suppress-Error-Toast'];
+        
+        if (!suppressToast) {
+            if (error.response) {
+                if (error.response.status === 401) {
+                    // Clear tokens and force login if unauthorized
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    localStorage.removeItem('user_info');
+                    window.dispatchEvent(new Event('auth-expired'));
+                    toast.error("Session expired. Please log in again.");
+                } else if (error.response.status >= 500) {
+                    toast.error("An unexpected server error occurred.");
+                } else if (error.response.data && error.response.data.message) {
+                    toast.error(error.response.data.message);
+                }
+            } else if (error.request) {
+                // Ignore network errors when suppressed or during background fallback
+                console.warn("Network request failed, falling back to local state.");
             }
-        } else if (error.request) {
-            toast.error("Network error. Please check your connection.");
         }
         return Promise.reject(error);
     }

@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Menu, Users, Settings, Table2, LogOut } from 'lucide-react';
+import { LayoutDashboard, Menu, Users, Settings, Table2, LogOut, Calendar } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 
 export default function AdminLayout() {
@@ -8,6 +8,7 @@ export default function AdminLayout() {
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Menu & Catalog', path: '/admin/menu', icon: Menu },
+    { name: 'Events', path: '/admin/events', icon: Calendar },
     { name: 'User Management', path: '/admin/users', icon: Users },
     { name: 'Table Management', path: '/admin/tables', icon: Table2 },
     { name: 'System Settings', path: '/admin/features', icon: Settings },
