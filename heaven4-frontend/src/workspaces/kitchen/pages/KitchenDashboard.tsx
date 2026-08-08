@@ -146,7 +146,7 @@ export default function KitchenDashboard() {
                             id: o.id,
                             tableNumber: o.tableNumber,
                             customerName: o.customerName || 'Dining Customer',
-                            status: 'PENDING',
+                            status: 'PENDING' as const,
                             totalAmount: o.total,
                             createdAt: o.placedAt || new Date().toISOString(),
                             items: o.items.map((i: any) => ({
