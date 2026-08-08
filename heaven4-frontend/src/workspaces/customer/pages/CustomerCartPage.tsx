@@ -117,6 +117,17 @@ export default function CustomerCartPage() {
                 placedAt: new Date().toLocaleString()
             };
             setPlacedOrder(placed);
+
+            // Sync order across all open windows & dashboards instantly
+            try {
+                const existingOrdersRaw = localStorage.getItem('heaven4_active_orders_v2');
+                const existingOrders = existingOrdersRaw ? JSON.parse(existingOrdersRaw) : [];
+                const updatedOrders = [placed, ...(Array.isArray(existingOrders) ? existingOrders : [])];
+                localStorage.setItem('heaven4_active_orders_v2', JSON.stringify(updatedOrders));
+                window.dispatchEvent(new CustomEvent('heaven4-order-placed', { detail: placed }));
+            } catch (e) {
+                console.error("Order local sync failed", e);
+            }
             
             toast.success('🎉 Order placed successfully!');
             clearCart();

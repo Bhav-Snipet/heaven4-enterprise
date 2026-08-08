@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import {
     formatEventDateTime, getDietaryBadge, EventMenuItem
 } from '@/shared/utils/eventHelpers';
+import { loadEventGuests, updateGuestStatus } from '@/shared/utils/eventGuestHelpers';
 
 interface EventPassBooking {
     id: number; passCode: string; customerName: string; customerPhone: string;
@@ -70,13 +71,40 @@ type Tab = 'live' | 'upcoming' | 'history';
 
 export default function ManagerEventsPage() {
     const [events, setEvents] = useState<EventData[]>(DEMO_EVENTS);
-    const [bookings, setBookings] = useState<EventPassBooking[]>(DEMO_BOOKINGS);
+    const [bookings, setBookings] = useState<EventPassBooking[]>([]);
     const [activeTab, setActiveTab] = useState<Tab>('live');
     const [searchCode, setSearchCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [verifyResult, setVerifyResult] = useState<{ pass: EventPassBooking; type: 'success' | 'already' | 'cancelled' | 'notfound' } | null>(null);
     const [showMenu, setShowMenu] = useState(false);
+
+    const syncBookingsFromStorage = () => {
+        const liveGuests = loadEventGuests();
+        const formatted: EventPassBooking[] = liveGuests.map((g, idx) => ({
+            id: 800 + idx,
+            passCode: g.passCode,
+            customerName: g.guestName,
+            customerPhone: g.guestPhone,
+            numberOfPasses: g.passesCount,
+            tableNumber: g.tableNumber,
+            totalPaid: 45 * g.passesCount,
+            status: g.status === 'ATTENDED ✓' ? 'ATTENDED' : g.status === 'CANCELLED' ? 'CANCELLED' : 'BOOKED',
+            bookedAt: g.bookedAt
+        }));
+        setBookings(formatted);
+    };
+
+    useEffect(() => {
+        syncBookingsFromStorage();
+        const handleGuestsUpdated = () => syncBookingsFromStorage();
+        window.addEventListener('heaven4-guests-updated', handleGuestsUpdated);
+        window.addEventListener('storage', handleGuestsUpdated);
+        return () => {
+            window.removeEventListener('heaven4-guests-updated', handleGuestsUpdated);
+            window.removeEventListener('storage', handleGuestsUpdated);
+        };
+    }, []);
 
     useEffect(() => {
         const fetchEvents = async () => {
@@ -120,7 +148,8 @@ export default function ManagerEventsPage() {
             }
 
             const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-            await apiClient.put(`/events/passes/${found.passCode}/checkin`).catch(() => null);
+            await apiClient.put(`/events/passes/${found.passCode}/checkin`, {}, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+            updateGuestStatus(found.passCode, 'ATTENDED ✓');
             setBookings(prev => prev.map(b => b.id === found.id ? { ...b, status: 'ATTENDED', checkedInAt: new Date().toISOString() } : b));
             setVerifyResult({ pass: { ...found, status: 'ATTENDED', checkedInAt: now }, type: 'success' });
             toast.success(`🎉 ${found.customerName} (${found.numberOfPasses} passes) Checked In!`);

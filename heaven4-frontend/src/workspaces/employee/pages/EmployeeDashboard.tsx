@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, CheckCircle2, User, Clock, Sparkles, MapPin, Utensils } from 'lucide-react';
+import { Plus, X, CheckCircle2, User, Clock, Sparkles, MapPin, Utensils, Crown, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import toast from 'react-hot-toast';
-import { loadMasterTables, TableConfig, getRecommendedTables, CATEGORY_DETAILS } from '@/shared/utils/tableHelpers';
+import {
+    loadMasterTables, TableConfig, getRecommendedTables, CATEGORY_DETAILS,
+    getGroupedMasterTables, saveMasterTables
+} from '@/shared/utils/tableHelpers';
 
 interface MenuItem { id: number; name: string; basePrice: number; categoryId: number; isAvailable: boolean; isBeverage?: boolean; }
 
@@ -31,6 +34,8 @@ export default function EmployeeDashboard() {
     const [selectedTableConfig, setSelectedTableConfig] = useState<TableConfig | null>(null);
     const [selectedItems, setSelectedItems] = useState<{ item: MenuItem; qty: number }[]>([]);
     const [walkInTable, setWalkInTable] = useState('');
+    const [walkInCustomerName, setWalkInCustomerName] = useState('');
+    const [walkInMembershipTier, setWalkInMembershipTier] = useState('GOLD VIP');
     const [dineInGuests, setDineInGuests] = useState<number>(2);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -54,13 +59,47 @@ export default function EmployeeDashboard() {
         toast.success(!isClockedIn ? 'Clocked IN for shift!' : 'Clocked OUT from shift.');
     };
 
-    const loadTables = useCallback(() => {
-        setMasterTables(loadMasterTables());
+    const syncTablesWithPlacedOrders = useCallback(() => {
+        const tables = loadMasterTables();
+        try {
+            const rawOrders = localStorage.getItem('heaven4_active_orders_v2');
+            if (rawOrders) {
+                const orders = JSON.parse(rawOrders);
+                if (Array.isArray(orders)) {
+                    orders.forEach((ord: any) => {
+                        if (ord.tableNumber) {
+                            const tbl = tables.find(t => t.tableNumber.toUpperCase() === ord.tableNumber.toUpperCase() || t.id.toUpperCase() === ord.tableNumber.toUpperCase());
+                            if (tbl) {
+                                tbl.status = 'OCCUPIED';
+                                tbl.customerName = tbl.customerName || `Order #${ord.id}`;
+                                tbl.membershipTier = tbl.membershipTier || 'GOLD VIP';
+                            }
+                        }
+                    });
+                }
+            }
+        } catch { /* proceed */ }
+        setMasterTables(tables);
     }, []);
 
     useEffect(() => {
-        loadTables();
-    }, [loadTables]);
+        syncTablesWithPlacedOrders();
+
+        const handleOrderPlaced = () => syncTablesWithPlacedOrders();
+        const handleTablesUpdated = () => syncTablesWithPlacedOrders();
+        window.addEventListener('heaven4-order-placed', handleOrderPlaced);
+        window.addEventListener('heaven4-tables-updated', handleTablesUpdated);
+        window.addEventListener('storage', handleOrderPlaced);
+
+        const interval = setInterval(syncTablesWithPlacedOrders, 3000);
+
+        return () => {
+            window.removeEventListener('heaven4-order-placed', handleOrderPlaced);
+            window.removeEventListener('heaven4-tables-updated', handleTablesUpdated);
+            window.removeEventListener('storage', handleOrderPlaced);
+            clearInterval(interval);
+        };
+    }, [syncTablesWithPlacedOrders]);
 
     // Switch seating layout tables based on selected area/event
     const currentDisplayTables = masterTables.filter(t => {
@@ -69,6 +108,8 @@ export default function EmployeeDashboard() {
         if (areaView === 'EVENT_BALLROOM') return t.eventId === 902 || t.category === 'EVENT_BALLROOM';
         return true;
     });
+
+    const groupedSections = getGroupedMasterTables(currentDisplayTables);
 
     const recommendedTables = getRecommendedTables(dineInGuests, areaView === 'EVENT_ROOFTOP' ? 901 : areaView === 'EVENT_BALLROOM' ? 902 : undefined);
 
@@ -85,9 +126,19 @@ export default function EmployeeDashboard() {
 
         setIsProcessing(true);
         try {
-            toast.success(`🎉 Order placed for Table ${walkInTable} (${dineInGuests} guests)!`);
-            setMasterTables(prev => prev.map(t => t.tableNumber === walkInTable ? { ...t, status: 'OCCUPIED', currentGuests: dineInGuests } : t));
+            const updated = masterTables.map(t => t.tableNumber === walkInTable ? {
+                ...t,
+                status: 'OCCUPIED' as const,
+                currentGuests: dineInGuests,
+                customerName: walkInCustomerName.trim() || 'VIP Walk-in Guest',
+                membershipTier: walkInMembershipTier
+            } : t);
+
+            saveMasterTables(updated);
+            setMasterTables(updated);
+            toast.success(`🎉 Order placed for Table ${walkInTable} (${dineInGuests} guests · ${walkInMembershipTier})!`);
             setSelectedItems([]);
+            setWalkInCustomerName('');
             setModal(null);
         } catch { toast.error('Failed to create order'); } finally { setIsProcessing(false); }
     };
@@ -95,14 +146,16 @@ export default function EmployeeDashboard() {
     const handleSettleBill = async (tableNo: string) => {
         setIsProcessing(true);
         try {
+            const updated = masterTables.map(t => t.tableNumber === tableNo ? { ...t, status: 'FREE' as const, currentGuests: undefined, customerName: undefined, membershipTier: undefined } : t);
+            saveMasterTables(updated);
+            setMasterTables(updated);
             toast.success(`💳 Bill settled for Table ${tableNo}! Table is now FREE.`);
-            setMasterTables(prev => prev.map(t => t.tableNumber === tableNo ? { ...t, status: 'FREE', currentGuests: undefined, customerName: undefined } : t));
             setModal(null);
         } catch { toast.error('Failed to settle bill'); } finally { setIsProcessing(false); }
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-4 md:p-6 space-y-6">
+        <div className="min-h-screen bg-slate-950 text-white p-4 md:p-6 space-y-6 pb-20">
             
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-6">
@@ -110,7 +163,7 @@ export default function EmployeeDashboard() {
                     <h1 className="text-3xl font-black bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-300 bg-clip-text text-transparent">
                         Floor POS & Staff Operations
                     </h1>
-                    <p className="text-xs text-slate-400 mt-1">Real-time seating capacity, normal & event dining switching, & smart table recommendations.</p>
+                    <p className="text-xs text-slate-400 mt-1">Real-time seating capacity, section-grouped sequencing, VIP walk-in overrides, & instant order sync.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     <button onClick={toggleClockIn}
@@ -137,7 +190,7 @@ export default function EmployeeDashboard() {
                 </div>
             </header>
 
-            {/* ── AREA / EVENT SEATING SWITCHER ── */}
+            {/* AREA / EVENT SEATING SWITCHER */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
                 <div className="flex items-center gap-2">
                     <Utensils className="w-5 h-5 text-amber-400" />
@@ -161,7 +214,7 @@ export default function EmployeeDashboard() {
                 </div>
             </div>
 
-            {/* 🎭 Event Duty Assignment Section */}
+            {/* 🎭 Event Duty Shift */}
             <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-5 shadow-xl space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -192,61 +245,71 @@ export default function EmployeeDashboard() {
                 </div>
             </div>
 
-            {/* Table Grid Display with Seating Capacity Badges */}
-            <div>
-                <div className="flex justify-between items-center mb-3">
-                    <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                        {areaView === 'NORMAL' ? 'Main Dining Hall Tables' : areaView === 'EVENT_ROOFTOP' ? 'Rooftop Event Seating Layout' : 'Ballroom Event Seating Layout'}
-                    </h2>
-                    <span className="text-xs text-slate-500">{currentDisplayTables.length} tables in this layout</span>
-                </div>
+            {/* SECTION-GROUPED TABLE GRID IN NUMERICAL SEQUENCE */}
+            <div className="space-y-8">
+                {groupedSections.map(section => (
+                    <div key={section.category} className="space-y-3">
+                        <div className="flex justify-between items-center p-3 bg-slate-900 border border-slate-800 rounded-2xl">
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg">{section.details.icon}</span>
+                                <h3 className="text-xs font-black text-white uppercase tracking-wider">{section.details.label} Section</h3>
+                                <span className="text-xs text-slate-400">({section.tables.length} tables in numerical sequence)</span>
+                            </div>
+                            <span className="text-xs font-bold text-amber-400">
+                                Section Capacity: {section.tables.reduce((s, t) => s + t.capacity, 0)} Seats
+                            </span>
+                        </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {currentDisplayTables.map(table => {
-                        const catInfo = CATEGORY_DETAILS[table.category] || CATEGORY_DETAILS.STANDARD;
-                        return (
-                            <motion.div key={table.id} whileHover={{ y: -4 }}
-                                onClick={() => { setSelectedTableConfig(table); setModal('close'); }}
-                                className={`p-4 rounded-3xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                                    table.status === 'OCCUPIED' ? 'bg-slate-900 border-blue-500 shadow-xl shadow-blue-500/10' :
-                                    table.status === 'RESERVED' ? 'bg-slate-900 border-amber-500/50 shadow-xl shadow-amber-500/10' :
-                                    'bg-slate-950 border-slate-800 hover:border-blue-500/50'
-                                }`}>
-                                <div>
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-2xl font-black text-white">Table {table.tableNumber}</h3>
-                                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                                            table.status === 'OCCUPIED' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
-                                            table.status === 'RESERVED' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                                            'bg-slate-800 text-slate-400 border border-slate-700'
-                                        }`}>
-                                            {table.status}
-                                        </span>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            {section.tables.map(table => (
+                                <motion.div key={table.id} whileHover={{ y: -4 }}
+                                    onClick={() => { setSelectedTableConfig(table); setModal('close'); }}
+                                    className={`p-4 rounded-3xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
+                                        table.status === 'OCCUPIED' ? 'bg-slate-900 border-blue-500 shadow-xl shadow-blue-500/10' :
+                                        table.status === 'RESERVED' ? 'bg-slate-900 border-amber-500/50 shadow-xl shadow-amber-500/10' :
+                                        'bg-slate-950 border-slate-800 hover:border-blue-500/50'
+                                    }`}>
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="text-2xl font-black text-white">Table {table.tableNumber}</h3>
+                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                                table.status === 'OCCUPIED' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                                table.status === 'RESERVED' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                                'bg-slate-800 text-slate-400 border border-slate-700'
+                                            }`}>
+                                                {table.status}
+                                            </span>
+                                        </div>
+
+                                        {/* Capacity Badge */}
+                                        <div className="mb-2 flex items-center justify-between gap-1 flex-wrap">
+                                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black ${section.details.badge} inline-flex items-center gap-1`}>
+                                                <span>{section.details.icon}</span> {table.category === 'BAR_COUNTER' ? 'Bar Seat (Cap: 1)' : `Cap: ${table.capacity} Seats`}
+                                            </span>
+                                            {table.membershipTier && (
+                                                <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] font-black rounded border border-amber-500/30 flex items-center gap-1">
+                                                    <Crown className="w-2.5 h-2.5" /> {table.membershipTier}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {table.customerName && (
+                                            <p className="text-[11px] font-bold text-amber-400 truncate mt-1">{table.customerName}</p>
+                                        )}
                                     </div>
 
-                                    {/* Capacity Badge */}
-                                    <div className="mb-2">
-                                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black ${catInfo.badge} inline-flex items-center gap-1`}>
-                                            <span>{catInfo.icon}</span> {table.category === 'BAR_COUNTER' ? 'Bar Seat (Cap: 1)' : `Cap: ${table.capacity} Seats`}
-                                        </span>
+                                    <div className="mt-3 pt-2 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500">
+                                        <span>{section.details.label}</span>
+                                        <span className="text-blue-400 font-bold">Tap to manage</span>
                                     </div>
-
-                                    {table.customerName && (
-                                        <p className="text-[11px] font-bold text-amber-400 truncate mt-1">{table.customerName}</p>
-                                    )}
-                                </div>
-
-                                <div className="mt-3 pt-2 border-t border-slate-800 flex justify-between items-center text-[10px] text-slate-500">
-                                    <span>{catInfo.label}</span>
-                                    <span className="text-blue-400 font-bold">Tap to manage</span>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
 
-            {/* ── WALK-IN ORDER & GUEST SEATING RECOMMENDATION MODAL ── */}
+            {/* WALK-IN ORDER & VIP MEMBERSHIP OVERRIDE MODAL */}
             <AnimatePresence>
                 {modal === 'walkin' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -259,22 +322,45 @@ export default function EmployeeDashboard() {
                             <div className="flex justify-between items-center p-6 border-b border-slate-800 sticky top-0 bg-slate-900 z-10">
                                 <div>
                                     <h3 className="text-xl font-black text-white flex items-center gap-2"><Plus className="w-5 h-5 text-blue-400" /> New Walk-in Order & Smart Seating</h3>
-                                    <p className="text-xs text-slate-400 mt-0.5">Select guest count to see smart table recommendations matching seat capacity.</p>
+                                    <p className="text-xs text-slate-400 mt-0.5">Select guest count, assign VIP membership priority, & recommend matching tables.</p>
                                 </div>
                                 <button onClick={() => setModal(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
                             </div>
 
-                            <div className="p-6 space-y-5">
+                            <div className="p-6 space-y-5 text-xs">
+                                {/* Guest Name & Phone-less VIP Membership Tier Override */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Walk-in Guest Name</label>
+                                        <input type="text" value={walkInCustomerName} onChange={e => setWalkInCustomerName(e.target.value)}
+                                            placeholder="e.g. Marcus Vance (Phone-less Walk-in)"
+                                            className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-bold outline-none focus:border-amber-500" />
+                                    </div>
+                                    <div>
+                                        <label className="block font-bold text-slate-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                                            <Crown className="w-3.5 h-3.5 text-amber-400" /> Staff VIP Membership Override
+                                        </label>
+                                        <select value={walkInMembershipTier} onChange={e => setWalkInMembershipTier(e.target.value)}
+                                            className="w-full p-3 bg-slate-950 border border-amber-500/50 text-amber-400 rounded-xl font-black outline-none">
+                                            <option value="DIAMOND VIP" className="bg-slate-900">👑 DIAMOND VIP (Priority Service)</option>
+                                            <option value="PLATINUM VIP" className="bg-slate-900">🥇 PLATINUM VIP</option>
+                                            <option value="GOLD VIP" className="bg-slate-900">🥈 GOLD VIP</option>
+                                            <option value="SILVER VIP" className="bg-slate-900">🥉 SILVER VIP</option>
+                                            <option value="STANDARD" className="bg-slate-900">👤 STANDARD</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 {/* Guest Count Selector */}
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 mb-2">How many guests are dining in?</label>
+                                    <label className="block font-bold text-slate-400 mb-2 uppercase tracking-wider">Dine-in Guests Count</label>
                                     <div className="flex gap-2 flex-wrap">
                                         {[1, 2, 4, 6, 8, 10, 12].map(n => (
                                             <button key={n} type="button" onClick={() => setDineInGuests(n)}
                                                 className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${
                                                     dineInGuests === n ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md' : 'bg-slate-800 text-slate-300 border-slate-700'
                                                 }`}>
-                                                {n === 1 ? '🍸 1 Person (Bar/Single)' : n === 2 ? '👩‍❤️‍👨 2 Guests' : `${n} Guests`}
+                                                {n === 1 ? '🍸 1 Person (Bar Seat)' : n === 2 ? '👩‍❤️‍👨 2 Guests' : `${n} Guests`}
                                             </button>
                                         ))}
                                     </div>
@@ -282,9 +368,9 @@ export default function EmployeeDashboard() {
 
                                 {/* Table Selection with Smart Recommendations */}
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 mb-2">Select Recommended Table (Capacity ≥ {dineInGuests})</label>
+                                    <label className="block font-bold text-slate-400 mb-2 uppercase tracking-wider">Select Recommended Table (Capacity ≥ {dineInGuests})</label>
                                     {recommendedTables.length === 0 ? (
-                                        <div className="p-4 text-center border border-dashed border-red-500/40 bg-red-500/10 rounded-2xl text-red-400 text-xs">
+                                        <div className="p-4 text-center border border-dashed border-red-500/40 bg-red-500/10 rounded-2xl text-red-400 text-xs font-bold">
                                             No available tables with capacity for {dineInGuests} guests right now.
                                         </div>
                                     ) : (
@@ -298,7 +384,7 @@ export default function EmployeeDashboard() {
                                                             isMatch ? 'bg-amber-500 text-slate-950 border-amber-400 font-black shadow-lg' : 'bg-slate-950 text-white border-slate-800 hover:border-amber-500/50'
                                                         }`}>
                                                         <div className="flex justify-between items-center">
-                                                            <span className="font-black text-sm">T-{tbl.tableNumber}</span>
+                                                            <span className="font-black text-sm">{tbl.tableNumber}</span>
                                                             <span className="text-xs">{catInfo.icon}</span>
                                                         </div>
                                                         <p className={`text-[10px] ${isMatch ? 'text-slate-900 font-bold' : 'text-slate-400'}`}>Cap: {tbl.capacity} seats</p>
@@ -311,7 +397,7 @@ export default function EmployeeDashboard() {
 
                                 {/* Menu Items */}
                                 <div className="space-y-3">
-                                    <label className="block text-xs font-bold text-slate-400">Add Order Items</label>
+                                    <label className="block font-bold text-slate-400 uppercase tracking-wider">Add Order Items</label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
                                         {DEFAULT_ITEMS.map(item => (
                                             <div key={item.id} className="flex justify-between items-center p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs">
@@ -343,7 +429,7 @@ export default function EmployeeDashboard() {
 
                                 <button onClick={handleCreateWalkInOrder} disabled={isProcessing || !walkInTable}
                                     className="w-full py-4 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2">
-                                    <CheckCircle2 className="w-5 h-5" /> Confirm Walk-in Order for Table {walkInTable || '...'}
+                                    <CheckCircle2 className="w-5 h-5" /> Confirm Walk-in Order for Table {walkInTable || '...'} ({walkInMembershipTier})
                                 </button>
                             </div>
                         </motion.div>
@@ -373,6 +459,9 @@ export default function EmployeeDashboard() {
                                 <div className="flex justify-between text-slate-400"><span>Status</span><span className="font-bold text-amber-400">{selectedTableConfig.status}</span></div>
                                 {selectedTableConfig.customerName && (
                                     <div className="flex justify-between text-slate-400"><span>Customer</span><span className="font-bold text-white">{selectedTableConfig.customerName}</span></div>
+                                )}
+                                {selectedTableConfig.membershipTier && (
+                                    <div className="flex justify-between text-slate-400"><span>VIP Tier</span><span className="font-bold text-amber-300">{selectedTableConfig.membershipTier}</span></div>
                                 )}
                             </div>
 

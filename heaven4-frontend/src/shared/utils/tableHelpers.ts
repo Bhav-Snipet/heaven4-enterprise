@@ -15,17 +15,18 @@ export interface TableConfig {
     currentGuests?: number;
     customerName?: string;
     customerPhone?: string;
+    membershipTier?: string;
     orderId?: number;
 }
 
-export const CATEGORY_DETAILS: Record<TableCategory, { label: string; defaultCap: number; icon: string; badge: string }> = {
-    BAR_COUNTER: { label: 'Counter Bar Seat', defaultCap: 1, icon: '🍸', badge: 'bg-purple-950/80 text-purple-300 border-purple-700/60' },
-    COUPLE: { label: 'Couple Dining Table', defaultCap: 2, icon: '👩‍❤️‍👨', badge: 'bg-pink-950/80 text-pink-300 border-pink-700/60' },
-    STANDARD: { label: 'Standard Family Table', defaultCap: 4, icon: '🍽️', badge: 'bg-blue-950/80 text-blue-300 border-blue-700/60' },
-    BOOTH: { label: 'Large Family Booth', defaultCap: 6, icon: '🛋️', badge: 'bg-teal-950/80 text-teal-300 border-teal-700/60' },
-    VIP_LOUNGE: { label: 'VIP Executive Lounge', defaultCap: 8, icon: '👑', badge: 'bg-amber-950/80 text-amber-300 border-amber-700/60' },
-    EVENT_ROOFTOP: { label: 'Rooftop Event Terrace', defaultCap: 4, icon: '🎷', badge: 'bg-indigo-950/80 text-indigo-300 border-indigo-700/60' },
-    EVENT_BALLROOM: { label: 'Ballroom Private Gala', defaultCap: 8, icon: '💼', badge: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60' },
+export const CATEGORY_DETAILS: Record<TableCategory, { label: string; defaultCap: number; icon: string; badge: string; prefix: string }> = {
+    BAR_COUNTER: { label: 'Counter Bar Seat', defaultCap: 1, icon: '🍸', badge: 'bg-purple-950/80 text-purple-300 border-purple-700/60', prefix: 'B-' },
+    COUPLE: { label: 'Couple Dining Table', defaultCap: 2, icon: '👩‍❤️‍👨', badge: 'bg-pink-950/80 text-pink-300 border-pink-700/60', prefix: 'T-' },
+    STANDARD: { label: 'Standard Family Table', defaultCap: 4, icon: '🍽️', badge: 'bg-blue-950/80 text-blue-300 border-blue-700/60', prefix: 'T-' },
+    BOOTH: { label: 'Large Family Booth', defaultCap: 6, icon: '🛋️', badge: 'bg-teal-950/80 text-teal-300 border-teal-700/60', prefix: 'T-' },
+    VIP_LOUNGE: { label: 'VIP Executive Lounge', defaultCap: 8, icon: '👑', badge: 'bg-amber-950/80 text-amber-300 border-amber-700/60', prefix: 'VIP-' },
+    EVENT_ROOFTOP: { label: 'Rooftop Event Terrace', defaultCap: 4, icon: '🎷', badge: 'bg-indigo-950/80 text-indigo-300 border-indigo-700/60', prefix: 'RT-' },
+    EVENT_BALLROOM: { label: 'Ballroom Private Gala', defaultCap: 8, icon: '💼', badge: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60', prefix: 'BR-' },
 };
 
 export const DEFAULT_MASTER_TABLES: TableConfig[] = [
@@ -56,7 +57,7 @@ export const DEFAULT_MASTER_TABLES: TableConfig[] = [
     { id: 'T-14', tableNumber: 'T-14', category: 'BOOTH', categoryLabel: 'Large Family Booth', capacity: 6, status: 'FREE' },
 
     // VIP Lounges (Capacity: 8)
-    { id: 'VIP-1', tableNumber: 'VIP-1', category: 'VIP_LOUNGE', categoryLabel: 'VIP Executive Lounge', capacity: 8, status: 'OCCUPIED', currentGuests: 2, customerName: 'Sarah Cooper (Event Guest)' },
+    { id: 'VIP-1', tableNumber: 'VIP-1', category: 'VIP_LOUNGE', categoryLabel: 'VIP Executive Lounge', capacity: 8, status: 'OCCUPIED', currentGuests: 2, customerName: 'Sarah Cooper (Event Guest)', membershipTier: 'DIAMOND VIP' },
     { id: 'VIP-2', tableNumber: 'VIP-2', category: 'VIP_LOUNGE', categoryLabel: 'VIP Executive Lounge', capacity: 8, status: 'FREE' },
     { id: 'VIP-3', tableNumber: 'VIP-3', category: 'VIP_LOUNGE', categoryLabel: 'VIP Executive Lounge', capacity: 8, status: 'FREE' },
     { id: 'VIP-4', tableNumber: 'VIP-4', category: 'VIP_LOUNGE', categoryLabel: 'VIP Executive Lounge', capacity: 8, status: 'FREE' },
@@ -66,7 +67,7 @@ export const DEFAULT_MASTER_TABLES: TableConfig[] = [
     { id: 'RT-1', tableNumber: 'RT-1', category: 'EVENT_ROOFTOP', categoryLabel: 'Rooftop Terrace Table', capacity: 4, status: 'FREE', eventId: 901, eventTitle: '🎷 Sunset Rooftop Jazz & Wine Night' },
     { id: 'RT-2', tableNumber: 'RT-2', category: 'EVENT_ROOFTOP', categoryLabel: 'Rooftop Terrace Table', capacity: 4, status: 'FREE', eventId: 901, eventTitle: '🎷 Sunset Rooftop Jazz & Wine Night' },
     { id: 'RT-3', tableNumber: 'RT-3', category: 'EVENT_ROOFTOP', categoryLabel: 'Rooftop Terrace Table', capacity: 4, status: 'FREE', eventId: 901, eventTitle: '🎷 Sunset Rooftop Jazz & Wine Night' },
-    { id: 'RT-VIP-1', tableNumber: 'RT-VIP-1', category: 'EVENT_ROOFTOP', categoryLabel: 'Rooftop VIP Lounge', capacity: 8, status: 'OCCUPIED', eventId: 901, eventTitle: '🎷 Sunset Rooftop Jazz & Wine Night', currentGuests: 2, customerName: 'Sarah Cooper' },
+    { id: 'RT-VIP-1', tableNumber: 'RT-VIP-1', category: 'EVENT_ROOFTOP', categoryLabel: 'Rooftop VIP Lounge', capacity: 8, status: 'OCCUPIED', eventId: 901, eventTitle: '🎷 Sunset Rooftop Jazz & Wine Night', currentGuests: 2, customerName: 'Sarah Cooper', membershipTier: 'PLATINUM VIP' },
     { id: 'RT-VIP-2', tableNumber: 'RT-VIP-2', category: 'EVENT_ROOFTOP', categoryLabel: 'Rooftop VIP Lounge', capacity: 8, status: 'FREE', eventId: 901, eventTitle: '🎷 Sunset Rooftop Jazz & Wine Night' },
 
     // Event 902: Horizon Corp Private Gala Seating
@@ -75,7 +76,7 @@ export const DEFAULT_MASTER_TABLES: TableConfig[] = [
     { id: 'BR-VIP-1', tableNumber: 'BR-VIP-1', category: 'EVENT_BALLROOM', categoryLabel: 'Ballroom President Suite', capacity: 12, status: 'FREE', eventId: 902, eventTitle: '💼 Horizon Corp Private Gala' },
 ];
 
-const STORAGE_KEY = 'heaven4_master_tables_v2';
+const STORAGE_KEY = 'heaven4_master_tables_v3';
 
 export function loadMasterTables(): TableConfig[] {
     try {
@@ -90,6 +91,51 @@ export function loadMasterTables(): TableConfig[] {
 
 export function saveMasterTables(tables: TableConfig[]): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tables));
+    // Broadcast change across windows
+    window.dispatchEvent(new CustomEvent('heaven4-tables-updated', { detail: tables }));
+}
+
+// Extract numeric suffix from table identifier for sequence sorting
+export function extractTableNumber(tableNo: string): number {
+    const match = tableNo.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 999;
+}
+
+// Compute auto-filled next sequential table number for a section (e.g. B-4 -> B-5)
+export function getNextSequentialTableNumber(category: TableCategory): string {
+    const tables = loadMasterTables();
+    const catDetails = CATEGORY_DETAILS[category];
+    const categoryTables = tables.filter(t => t.category === category);
+    
+    if (categoryTables.length === 0) return `${catDetails.prefix}1`;
+
+    let maxNum = 0;
+    categoryTables.forEach(t => {
+        const num = extractTableNumber(t.tableNumber);
+        if (num < 900 && num > maxNum) maxNum = num;
+    });
+
+    return `${catDetails.prefix}${maxNum + 1}`;
+}
+
+// Sort tables in numerical sequence within category
+export function sortTablesSequentially(tables: TableConfig[]): TableConfig[] {
+    return [...tables].sort((a, b) => extractTableNumber(a.tableNumber) - extractTableNumber(b.tableNumber));
+}
+
+// Return master tables grouped by category section, with each section sorted numerically
+export function getGroupedMasterTables(tablesToGroup?: TableConfig[]): { category: TableCategory; details: typeof CATEGORY_DETAILS[TableCategory]; tables: TableConfig[] }[] {
+    const tables = tablesToGroup || loadMasterTables();
+    const categories: TableCategory[] = ['BAR_COUNTER', 'COUPLE', 'STANDARD', 'BOOTH', 'VIP_LOUNGE', 'EVENT_ROOFTOP', 'EVENT_BALLROOM'];
+
+    return categories.map(cat => {
+        const catTables = tables.filter(t => t.category === cat);
+        return {
+            category: cat,
+            details: CATEGORY_DETAILS[cat],
+            tables: sortTablesSequentially(catTables)
+        };
+    }).filter(group => group.tables.length > 0);
 }
 
 export function isValidTableNumber(tableNo: string, eventId?: number): boolean {
@@ -110,18 +156,15 @@ export function getTableConfig(tableNo: string): TableConfig | undefined {
     return tables.find(t => t.tableNumber.toUpperCase() === clean || t.id.toUpperCase() === clean);
 }
 
-// ── Smart Table Recommendation based on Guest Count ──────────────────────────
 export function getRecommendedTables(guestCount: number, eventId?: number): TableConfig[] {
     const tables = loadMasterTables();
     
-    // Filter available tables (FREE status) for the requested event or normal dining
     const available = tables.filter(t => {
         if (t.status !== 'FREE') return false;
         if (eventId) return t.eventId === eventId;
-        return !t.eventId; // normal dining
+        return !t.eventId;
     });
 
-    // Sort by smallest capacity that fits guestCount first (prevents wasting 8-person VIP for 1 person)
     return available
         .filter(t => t.capacity >= guestCount)
         .sort((a, b) => a.capacity - b.capacity);

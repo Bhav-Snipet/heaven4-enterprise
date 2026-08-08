@@ -134,16 +134,53 @@ export default function KitchenDashboard() {
         return () => clearInterval(id);
     }, [shiftStart]);
 
+    const syncActiveOrders = useCallback(() => {
+        try {
+            const rawOrders = localStorage.getItem('heaven4_active_orders_v2');
+            if (rawOrders) {
+                const localOrders = JSON.parse(rawOrders);
+                if (Array.isArray(localOrders) && localOrders.length > 0) {
+                    setOrders(prev => {
+                        const existingIds = new Set(prev.map(o => o.id));
+                        const formatted = localOrders.map((o: any) => ({
+                            id: o.id,
+                            tableNumber: o.tableNumber,
+                            status: 'PENDING',
+                            totalAmount: o.total,
+                            createdAt: o.placedAt || new Date().toISOString(),
+                            items: o.items.map((i: any) => ({
+                                menuItemName: i.name,
+                                quantity: i.quantity,
+                                unitPrice: i.price,
+                                subtotal: i.price * i.quantity
+                            }))
+                        }));
+
+                        const combined = [...prev];
+                        formatted.forEach(f => {
+                            if (!existingIds.has(f.id)) {
+                                combined.unshift(f);
+                                existingIds.add(f.id);
+                            }
+                        });
+                        return combined;
+                    });
+                }
+            }
+        } catch { /* proceed */ }
+    }, []);
+
     const fetchData = useCallback(async () => {
         try {
             const [activeRes, complaintsRes] = await Promise.all([
                 apiClient.get('/orders/active', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => ({ data: [] })),
                 apiClient.get('/complaints', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => ({ data: [] })),
             ]);
-            if (activeRes?.data) setOrders(activeRes.data);
+            if (activeRes?.data && activeRes.data.length > 0) setOrders(activeRes.data);
             if (complaintsRes?.data) setComplaints(complaintsRes.data);
-        } catch { /* use local state */ }
-    }, []);
+            syncActiveOrders();
+        } catch { syncActiveOrders(); }
+    }, [syncActiveOrders]);
 
     const fetchHistory = async () => {
         try {
@@ -152,7 +189,20 @@ export default function KitchenDashboard() {
         } catch { /* use local state */ }
     };
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        fetchData();
+        const handleOrderPlaced = () => syncActiveOrders();
+        window.addEventListener('heaven4-order-placed', handleOrderPlaced);
+        window.addEventListener('storage', handleOrderPlaced);
+        const interval = setInterval(syncActiveOrders, 3000);
+
+        return () => {
+            window.removeEventListener('heaven4-order-placed', handleOrderPlaced);
+            window.removeEventListener('storage', handleOrderPlaced);
+            clearInterval(interval);
+        };
+    }, [fetchData, syncActiveOrders]);
+
     useEffect(() => { if (tab === 'history') fetchHistory(); }, [tab]);
     useOperationsWebSocket(() => { fetchData(); });
 

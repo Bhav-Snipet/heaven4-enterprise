@@ -13,6 +13,7 @@ import {
     getCountdownBanner, generatePassCode, loadPaymentSettings, getDietaryBadge, EventMenuItem, isValidTableNumber
 } from '@/shared/utils/eventHelpers';
 import { getTableConfig, getRecommendedTables } from '@/shared/utils/tableHelpers';
+import { saveEventGuest } from '@/shared/utils/eventGuestHelpers';
 
 interface EventData {
     id: number; title: string; description: string;
@@ -211,10 +212,31 @@ export default function CustomerEventsPage() {
                 totalPaid: selectedEvent.ticketPrice * passes,
             }).catch(() => null);
 
+            saveEventGuest({
+                eventId: selectedEvent.id,
+                eventTitle: selectedEvent.title,
+                guestName: guestName.trim() || 'VIP Guest',
+                guestPhone: guestPhone.trim() || '7020875435',
+                passCode,
+                passesCount: passes,
+                tableNumber: tableNumber.trim() || 'General Entry',
+                membershipTier: 'GOLD VIP'
+            });
+
             toast.success(`🎉 Passes Booked! Pass code: ${passCode}`, { duration: 5000 });
             setBookingModal(false);
             setTimeout(() => navigate('/customer/event-passes'), 1000);
         } catch {
+            saveEventGuest({
+                eventId: selectedEvent.id,
+                eventTitle: selectedEvent.title,
+                guestName: guestName.trim() || 'VIP Guest',
+                guestPhone: guestPhone.trim() || '7020875435',
+                passCode,
+                passesCount: passes,
+                tableNumber: tableNumber.trim() || 'General Entry',
+                membershipTier: 'GOLD VIP'
+            });
             toast.success(`🎉 Booking confirmed! Pass code: ${passCode}`);
             setBookingModal(false);
             setTimeout(() => navigate('/customer/event-passes'), 1000);
@@ -259,10 +281,16 @@ export default function CustomerEventsPage() {
                     </h1>
                     <p className="text-xs text-slate-400 mt-1">Book passes, reserve tables, view dish images & cocktails, and unlock private company events.</p>
                 </div>
-                <button onClick={() => navigate('/customer/event-passes')}
-                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all border border-blue-500/30 shrink-0">
-                    <Ticket className="w-4 h-4" /> My Pass Wallet
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => navigate('/customer/menu')}
+                        className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all border border-slate-700">
+                        ← Back to Main Menu
+                    </button>
+                    <button onClick={() => navigate('/customer/event-passes')}
+                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition-all border border-blue-500/30">
+                        <Ticket className="w-4 h-4" /> My Pass Wallet
+                    </button>
+                </div>
             </div>
 
             {/* ── SEARCH / UNLOCK PRIVATE EVENT CODE BOX ── */}
@@ -272,8 +300,8 @@ export default function CustomerEventsPage() {
                         <Key className="w-5 h-5 text-purple-400" />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-white">Have a Private Event Invite Code?</p>
-                        <p className="text-[11px] text-slate-400">Enter your secret token (e.g. <code className="text-purple-300 font-mono">evt_horizon_corp_8412</code>) to unlock private galas</p>
+                        <h4 className="text-sm font-black text-white">Access Code / Event Token</h4>
+                        <p className="text-[11px] text-slate-400">Enter your private event token to unlock custom event menus & table reservations.</p>
                     </div>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
