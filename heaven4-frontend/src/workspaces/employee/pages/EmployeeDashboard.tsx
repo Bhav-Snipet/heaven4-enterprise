@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, CheckCircle2, User, Clock, Sparkles, MapPin, Utensils, Crown, ShieldCheck } from 'lucide-react';
+import { Plus, X, CheckCircle2, User, Clock, Sparkles, MapPin, Utensils, Crown } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import toast from 'react-hot-toast';
 import {

@@ -145,6 +145,7 @@ export default function KitchenDashboard() {
                         const formatted = localOrders.map((o: any) => ({
                             id: o.id,
                             tableNumber: o.tableNumber,
+                            customerName: o.customerName || 'Dining Customer',
                             status: 'PENDING',
                             totalAmount: o.total,
                             createdAt: o.placedAt || new Date().toISOString(),

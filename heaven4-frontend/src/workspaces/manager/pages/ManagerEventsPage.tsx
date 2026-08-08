@@ -59,14 +59,6 @@ const DEMO_EVENTS: EventData[] = [
     },
 ];
 
-const DEMO_BOOKINGS: EventPassBooking[] = [
-    { id: 501, passCode: 'EVT-PASS-8421', customerName: 'Sarah Cooper', customerPhone: '9876543210', numberOfPasses: 2, tableNumber: 'VIP-1', totalPaid: 90, status: 'ATTENDED', bookedAt: '2026-08-02T10:00:00', checkedInAt: '2026-08-04T16:15:00' },
-    { id: 502, passCode: 'EVT-PASS-7392', customerName: 'Michael Chang', customerPhone: '9800330396', numberOfPasses: 3, tableNumber: 'T-5', totalPaid: 135, status: 'BOOKED', bookedAt: '2026-08-03T14:30:00' },
-    { id: 503, passCode: 'EVT-PASS-5841', customerName: 'Emily Watson', customerPhone: '9700111222', numberOfPasses: 1, totalPaid: 45, status: 'BOOKED', bookedAt: '2026-08-04T09:15:00' },
-    { id: 504, passCode: 'EVT-PASS-2294', customerName: 'Raj Mehta', customerPhone: '9600887766', numberOfPasses: 4, tableNumber: 'T-12', totalPaid: 180, status: 'ATTENDED', bookedAt: '2026-08-01T18:00:00', checkedInAt: '2026-08-04T16:05:00' },
-    { id: 505, passCode: 'EVT-PASS-9913', customerName: 'Priya Sharma', customerPhone: '9500664433', numberOfPasses: 2, tableNumber: 'T-3', totalPaid: 90, status: 'BOOKED', bookedAt: '2026-08-04T11:00:00' },
-];
-
 type Tab = 'live' | 'upcoming' | 'history';
 
 export default function ManagerEventsPage() {

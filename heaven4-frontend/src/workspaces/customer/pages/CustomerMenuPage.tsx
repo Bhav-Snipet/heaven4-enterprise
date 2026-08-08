@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingBag, Plus, Leaf, Sparkles, AlertCircle, Ticket, Key, ChevronRight, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Plus, Leaf, Sparkles, AlertCircle, Ticket, ChevronRight, ArrowRight } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
