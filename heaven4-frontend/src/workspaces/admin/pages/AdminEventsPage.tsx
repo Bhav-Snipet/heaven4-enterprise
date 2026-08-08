@@ -12,6 +12,10 @@ import {
     generateInviteToken, getInviteLink, computeEventRevenue, DietaryType, EventMenuItem
 } from '@/shared/utils/eventHelpers';
 
+import {
+    loadPrivateEventRequests, updatePrivateEventRequestStatus
+} from '@/shared/utils/privateEventHelpers';
+
 interface EventPassBooking {
     id: number; passCode: string; customerName: string; customerPhone: string;
     numberOfPasses: number; tableNumber?: string; totalPaid: number;
@@ -94,8 +98,11 @@ export default function AdminEventsPage() {
     const [form, setForm] = useState<Omit<EventData, 'id'>>(BLANK_FORM);
     const [imageMode, setImageMode] = useState<'url' | 'upload'>('url');
     const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState<'all' | 'live' | 'upcoming' | 'completed'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'live' | 'upcoming' | 'completed' | 'private_requests'>('all');
+    const [privateRequests, setPrivateRequests] = useState<PrivateEventRequest[]>([]);
     const imageUploadRef = useRef<HTMLInputElement>(null);
+
+    const syncPrivateRequests = () => setPrivateRequests(loadPrivateEventRequests());
 
     const fetchEvents = async () => {
         setLoading(true);
@@ -107,7 +114,17 @@ export default function AdminEventsPage() {
         } catch { setEvents(DEMO_EVENTS); } finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchEvents(); }, []);
+    useEffect(() => {
+        fetchEvents();
+        syncPrivateRequests();
+        const handleRequestsUpdated = () => syncPrivateRequests();
+        window.addEventListener('heaven4-private-event-requests-updated', handleRequestsUpdated);
+        window.addEventListener('storage', handleRequestsUpdated);
+        return () => {
+            window.removeEventListener('heaven4-private-event-requests-updated', handleRequestsUpdated);
+            window.removeEventListener('storage', handleRequestsUpdated);
+        };
+    }, []);
 
     const setField = (key: keyof Omit<EventData, 'id'>, value: any) =>
         setForm(prev => ({ ...prev, [key]: value }));
@@ -235,22 +252,105 @@ export default function AdminEventsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 bg-slate-900 p-2 rounded-2xl border border-slate-800">
+            <div className="flex gap-2 bg-slate-900 p-2 rounded-2xl border border-slate-800 overflow-x-auto">
                 {[
-                    { key: 'all', label: `All (${events.length})` },
+                    { key: 'all', label: `All Events (${events.length})` },
                     { key: 'live', label: `🔴 Live (${events.filter(e => e.status === 'LIVE').length})` },
                     { key: 'upcoming', label: `Upcoming (${events.filter(e => e.status === 'UPCOMING' || e.status === 'DRAFT').length})` },
+                    { key: 'private_requests', label: `🏛️ Host Requests (${privateRequests.length})` },
                     { key: 'completed', label: `Completed (${events.filter(e => e.status === 'COMPLETED' || e.status === 'CANCELLED').length})` },
                 ].map(tab => (
                     <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
-                        className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${activeTab === tab.key ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                        className={`flex-1 min-w-[130px] py-2 text-xs font-bold rounded-xl transition-all ${activeTab === tab.key ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
                         {tab.label}
                     </button>
                 ))}
             </div>
 
+            {/* Private Event Requests View */}
+            {activeTab === 'private_requests' && (
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+                        <div>
+                            <h3 className="font-bold text-sm text-white">Private Event & Corporate Host Inquiries ({privateRequests.length})</h3>
+                            <p className="text-xs text-slate-400">Review incoming company galas, negotiate slot pricing, check auto-allocated staff, & approve slot.</p>
+                        </div>
+                    </div>
+
+                    {privateRequests.map(req => (
+                        <div key={req.id} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                                <div>
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${req.hostType === 'CORPORATE_FIRM' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'}`}>
+                                            {req.hostType === 'CORPORATE_FIRM' ? '🏢 Corporate Firm' : '👤 Private Host'}
+                                        </span>
+                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
+                                            req.status === 'APPROVED_BOOKED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                            req.status === 'REJECTED' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                                            'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                        }`}>
+                                            {req.status}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-xl font-black text-white">{req.eventTitle}</h3>
+                                    <p className="text-xs text-slate-400 mt-0.5">{req.companyName ? `Company: ${req.companyName} (${req.taxId || 'No Tax ID'}) · ` : ''}Contact: {req.contactName} ({req.contactPhone} · {req.contactEmail})</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] text-slate-500 uppercase font-bold">Estimated Revenue</p>
+                                    <p className="text-2xl font-black text-amber-400">${(req.agreedPrice || req.estimatedPrice).toLocaleString()}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-950 rounded-2xl border border-slate-800 text-xs">
+                                <div>
+                                    <p className="text-slate-500 text-[10px] uppercase font-bold">Preferred Date & Time</p>
+                                    <p className="font-bold text-white mt-0.5">{req.preferredDate} · {req.startTime} ({req.durationHours} hrs)</p>
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 text-[9px] uppercase font-bold">Headcount</p>
+                                    <p className="font-bold text-amber-400 mt-0.5">{req.headcount} Guests</p>
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 text-[9px] uppercase font-bold">Menu Tier</p>
+                                    <p className="font-bold text-slate-300 mt-0.5 truncate">{req.menuPackageLabel}</p>
+                                </div>
+                                <div>
+                                    <p className="text-slate-500 text-[9px] uppercase font-bold">Auto-allocated Staff</p>
+                                    <p className="font-bold text-teal-400 mt-0.5">{req.allocatedStaff.captains} Captains · {req.allocatedStaff.bartenders} Bar · {req.allocatedStaff.securityGuards} Security</p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-center pt-2 border-t border-slate-800">
+                                <span className="text-[11px] text-slate-500">Submitted on {req.submittedAt}</span>
+                                <div className="flex gap-2">
+                                    {req.status !== 'APPROVED_BOOKED' && (
+                                        <button onClick={() => { updatePrivateEventRequestStatus(req.id, 'APPROVED_BOOKED'); toast.success(`🎉 Request Approved & Slot Booked!`); }}
+                                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-md">
+                                            Approve & Book Slot
+                                        </button>
+                                    )}
+                                    {req.status !== 'REJECTED' && (
+                                        <button onClick={() => { updatePrivateEventRequestStatus(req.id, 'REJECTED'); toast.error(`Request rejected`); }}
+                                            className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold text-xs rounded-xl border border-red-500/30">
+                                            Reject
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {privateRequests.length === 0 && (
+                        <div className="py-12 text-center bg-slate-900 border border-slate-800 rounded-3xl p-8">
+                            <p className="text-slate-400 text-xs font-bold">No private event host requests received yet.</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Event List Table */}
-            {loading ? (
+            {activeTab !== 'private_requests' && (loading ? (
                 <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" /></div>
             ) : (
                 <div className="space-y-3">
@@ -323,7 +423,7 @@ export default function AdminEventsPage() {
                         );
                     })}
                 </div>
-            )}
+            ))}
 
             {/* CREATE / EDIT MODAL */}
             <AnimatePresence>
