@@ -3,59 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Flame, Sparkles } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
-
-export interface Category {
-    id: number;
-    name: string;
-    description: string;
-    sortOrder: number;
-    isActive: boolean;
-    imageUrl?: string;
-}
-
-export interface MenuItem {
-    id: number;
-    categoryId: number;
-    name: string;
-    description: string;
-    basePrice: number;
-    isAvailable: boolean;
-    isVeg: boolean;
-    spicinessLevel: number;
-    imageUrl?: string;
-    sortOrder: number;
-}
-
-const DEFAULT_CATEGORIES: Category[] = [
-    { id: 1, name: "🍕 Gourmet Pizzas & Pastas", description: "Artisanal stone-baked woodfired pizzas and freshly rolled pasta.", sortOrder: 1, isActive: true },
-    { id: 2, name: "🍸 Artisanal Cocktails & Mocktails", description: "Signature mixology crafted with premium botanicals and house-made syrups.", sortOrder: 2, isActive: true },
-    { id: 3, name: "🥩 Chef's Reserve Entrées", description: "Prime cuts, fresh seafood, and signature gourmet dinner entrees.", sortOrder: 3, isActive: true },
-    { id: 4, name: "🎷 Event Special Menu", description: "Exclusive luxury event offerings for gala functions and private dining.", sortOrder: 4, isActive: true },
-    { id: 5, name: "🍰 Artisanal Desserts", description: "Decadent patisserie items and house-made artisanal gelatos.", sortOrder: 5, isActive: true }
-];
-
-const DEFAULT_ITEMS_MAP: Record<number, MenuItem[]> = {
-    1: [
-        { id: 101, categoryId: 1, name: "Truffle Mushroom Gourmet Pizza", description: "Wild forest mushrooms, black truffle oil, fresh mozzarella, & micro basil.", basePrice: 19.99, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80" },
-        { id: 102, categoryId: 1, name: "Pepperoni Supreme Woodfired Pizza", description: "Artisanal pepperoni slices, aged mozzarella, San Marzano tomato glaze.", basePrice: 22.49, isAvailable: true, isVeg: false, spicinessLevel: 1, sortOrder: 2, imageUrl: "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=800&q=80" },
-        { id: 103, categoryId: 1, name: "Fresh Rigatoni Bolognese", description: "Slow-cooked prime beef & pork ragù, Parmigiano-Reggiano, fresh herbs.", basePrice: 24.50, isAvailable: true, isVeg: false, spicinessLevel: 0, sortOrder: 3, imageUrl: "https://images.unsplash.com/photo-1621996346565-e3d5d6281290?auto=format&fit=crop&w=800&q=80" }
-    ],
-    2: [
-        { id: 201, categoryId: 2, name: "Fresh Sparkling Lemon Mint Mojito", description: "Freshly muddled mint, organic lime, sparkling tonic & crushed ice.", basePrice: 5.50, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80" },
-        { id: 202, categoryId: 2, name: "Botanical Tonic & Gin", description: "Craft dry gin, elderflower tonic, dehydrated citrus & rosemary sprig.", basePrice: 11.50, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 2, imageUrl: "https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&w=800&q=80" }
-    ],
-    3: [
-        { id: 301, categoryId: 3, name: "Pan-Seared Chilean Sea Bass", description: "Sustainably sourced sea bass, saffron risotto, baby leeks, & lemon herb reduction.", basePrice: 34.00, isAvailable: true, isVeg: false, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80" },
-        { id: 302, categoryId: 3, name: "Prime Black Angus Ribeye Steak", description: "12oz USDA Prime ribeye, rosemary garlic butter, truffle parmesan fries.", basePrice: 38.50, isAvailable: true, isVeg: false, spicinessLevel: 0, sortOrder: 2, imageUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80" }
-    ],
-    4: [
-        { id: 401, categoryId: 4, name: "🎷 Truffle Mushroom Bruschetta (Event)", description: "Grilled sourdough topped with roasted forest mushrooms & black truffle glaze.", basePrice: 16.00, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?auto=format&fit=crop&w=800&q=80" },
-        { id: 402, categoryId: 4, name: "🍷 Reserve Cabernet Sauvignon (Event Wine)", description: "Napa Valley 2018 Vintage, notes of dark cherry, oak, & velvet tannins.", basePrice: 18.00, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 2, imageUrl: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80" }
-    ],
-    5: [
-        { id: 501, categoryId: 5, name: "Decadent Belgian Chocolate Lava Cake", description: "Warm molten chocolate core, Tahitian vanilla bean gelato, fresh berries.", basePrice: 9.99, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80" }
-    ]
-};
+import {
+    Category, MenuItem, loadCatalogFromStorage, saveCatalogToStorage
+} from '@/shared/utils/catalogData';
 
 export default function CatalogPage() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -72,29 +22,43 @@ export default function CatalogPage() {
 
     const fetchCatalog = async () => {
         setIsLoading(true);
+        // First load from local storage
+        const localData = loadCatalogFromStorage();
+        setCategories(localData.categories);
+        setItemsMap(localData.itemsMap);
+        if (localData.categories.length > 0 && activeTab === null && localData.categories[0]) {
+            setActiveTab(localData.categories[0].id);
+        }
+
         try {
             const res = await apiClient.get('/catalog/full', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
             if (res?.data?.categories && res.data.categories.length > 0) {
                 setCategories(res.data.categories);
                 setItemsMap(res.data.items || {});
-                if (activeTab === null) setActiveTab(1);
-            } else {
-                setCategories(DEFAULT_CATEGORIES);
-                setItemsMap(DEFAULT_ITEMS_MAP);
-                if (activeTab === null) setActiveTab(1);
+                saveCatalogToStorage(res.data.categories, res.data.items || {});
             }
-        } catch {
-            setCategories(DEFAULT_CATEGORIES);
-            setItemsMap(DEFAULT_ITEMS_MAP);
-            if (activeTab === null) setActiveTab(1);
-        } finally {
+        } catch { /* proceed with local storage */ } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
         fetchCatalog();
+
+        const handleCatalogUpdated = () => {
+            const localData = loadCatalogFromStorage();
+            setCategories(localData.categories);
+            setItemsMap(localData.itemsMap);
+        };
+        window.addEventListener('heaven4-catalog-updated', handleCatalogUpdated);
+        return () => window.removeEventListener('heaven4-catalog-updated', handleCatalogUpdated);
     }, []);
+
+    const persistCatalogChange = (updatedCats: Category[], updatedItems: Record<number, MenuItem[]>) => {
+        setCategories(updatedCats);
+        setItemsMap(updatedItems);
+        saveCatalogToStorage(updatedCats, updatedItems);
+    };
 
     const openNewCategoryModal = () => {
         setEditingCategory(null);
@@ -118,42 +82,46 @@ export default function CatalogPage() {
     };
 
     const deleteItem = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this item?")) return;
+        if (!confirm("Are you sure you want to delete this menu item?")) return;
         try {
-            await apiClient.delete(`/catalog/items/${id}`, { headers: { 'x-suppress-error-toast': 'true' } });
-            toast.success("Item deleted");
-            fetchCatalog();
-        } catch {
-            toast.success("Item deleted from catalog");
-        }
+            await apiClient.delete(`/catalog/items/${id}`, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+        } catch { /* proceed */ }
+
+        if (!activeTab) return;
+        const updatedTabItems = (itemsMap[activeTab] || []).filter(i => i.id !== id);
+        const newItemsMap = { ...itemsMap, [activeTab]: updatedTabItems };
+        persistCatalogChange(categories, newItemsMap);
+        toast.success("Menu item removed from catalog");
     };
 
     const deleteCategory = async (id: number, e: React.MouseEvent) => {
         e.stopPropagation();
         if (!confirm("Delete this entire category and all its items?")) return;
         try {
-            await apiClient.delete(`/catalog/categories/${id}`, { headers: { 'x-suppress-error-toast': 'true' } });
-            toast.success('Category deleted');
-            setActiveTab(null);
-            fetchCatalog();
-        } catch {
-            toast.success('Category deleted');
-        }
+            await apiClient.delete(`/catalog/categories/${id}`, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+        } catch { /* proceed */ }
+
+        const updatedCats = categories.filter(c => c.id !== id);
+        const newItemsMap = { ...itemsMap };
+        delete newItemsMap[id];
+        if (activeTab === id) setActiveTab(updatedCats.length > 0 && updatedCats[0] ? updatedCats[0].id : null);
+        persistCatalogChange(updatedCats, newItemsMap);
+        toast.success('Category deleted');
     };
 
-    const toggleItemActive = async (itemId: number, e: React.MouseEvent) => {
+    const toggleItemActive = async (item: MenuItem, e: React.MouseEvent) => {
         e.stopPropagation();
+        const updatedStatus = !item.isAvailable;
         try {
-            const res = await apiClient.put(`/admin/catalog/items/${itemId}/toggle-active`, {}, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
-            if (res?.data) {
-                toast.success(`${res.data.name} is now ${res.data.isAvailable ? 'Available' : 'Unavailable'}`);
-            } else {
-                toast.success("Item availability toggled");
-            }
-            fetchCatalog();
-        } catch {
-            toast.success("Item availability toggled");
-        }
+            await apiClient.put(`/admin/catalog/items/${item.id}/toggle-active`, {}, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+        } catch { /* proceed */ }
+
+        const catId = item.categoryId;
+        const catItems = itemsMap[catId] || [];
+        const updatedCatItems = catItems.map(i => i.id === item.id ? { ...i, isAvailable: updatedStatus } : i);
+        const newItemsMap = { ...itemsMap, [catId]: updatedCatItems };
+        persistCatalogChange(categories, newItemsMap);
+        toast.success(`${item.name} is now ${updatedStatus ? 'Available 🟢' : 'Out of Stock 🔴'}`);
     };
 
     const [kitchenLoadMode, setKitchenLoadMode] = useState(false);
@@ -164,7 +132,6 @@ export default function CatalogPage() {
             const res = await apiClient.put('/admin/kitchen-load-mode', { enabled: !kitchenLoadMode }, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
             setKitchenLoadMode(!kitchenLoadMode);
             toast.success(res?.data?.message || `Kitchen Load Mode ${!kitchenLoadMode ? 'ON' : 'OFF'}`);
-            fetchCatalog();
         } catch {
             setKitchenLoadMode(!kitchenLoadMode);
             toast.success(`Kitchen Load Mode ${!kitchenLoadMode ? 'ON' : 'OFF'}`);
@@ -174,7 +141,7 @@ export default function CatalogPage() {
     };
 
     return (
-        <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen text-white">
+        <div className="p-6 md:p-8 max-w-7xl mx-auto min-h-screen text-white pb-20">
             {/* Header section with dark glassmorphism */}
             <motion.div 
                 initial={{ y: -20, opacity: 0 }}
@@ -184,12 +151,12 @@ export default function CatalogPage() {
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <Sparkles className="w-5 h-5 text-amber-400" />
-                        <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Admin / Manager · Menu Studio</span>
+                        <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">Admin & Manager · Master Menu Studio</span>
                     </div>
                     <h1 className="text-3xl font-black bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-300 bg-clip-text text-transparent">
                         Menu & Catalog Management
                     </h1>
-                    <p className="text-slate-400 text-xs mt-1">Manage food categories, beverages, alcohol portion pricing, and dish availability.</p>
+                    <p className="text-slate-400 text-xs mt-1">Full control over 9 categories & 48 unique menu dishes, pricing, availability & custom food photos.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                     <button 
@@ -234,42 +201,50 @@ export default function CatalogPage() {
             ) : (
                 <div className="flex flex-col lg:flex-row gap-8 mt-6">
                     {/* Categories Sidebar */}
-                    <div className="w-full lg:w-1/4 space-y-3">
-                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Categories</div>
-                        {categories.map((cat) => (
-                            <motion.div 
-                                key={cat.id}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setActiveTab(cat.id)}
-                                className={`p-4 rounded-2xl cursor-pointer transition-all border flex justify-between items-center group
-                                    ${activeTab === cat.id 
-                                        ? 'bg-blue-600/20 border-blue-500/50 shadow-lg text-white font-bold' 
-                                        : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
+                    <div className="w-full lg:w-1/4 space-y-2.5">
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex justify-between items-center">
+                            <span>Categories ({categories.length})</span>
+                        </div>
+                        {categories.map((cat) => {
+                            const itemCount = (itemsMap[cat.id] || []).length;
+                            return (
+                                <motion.div 
+                                    key={cat.id}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setActiveTab(cat.id)}
+                                    className={`p-3.5 rounded-2xl cursor-pointer transition-all border flex justify-between items-center group ${
+                                        activeTab === cat.id 
+                                            ? 'bg-amber-500/15 border-amber-500/50 text-white shadow-lg shadow-amber-500/10' 
+                                            : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-300'
                                     }`}
-                            >
-                                <span className={`font-bold text-xs ${activeTab === cat.id ? 'text-amber-400' : 'text-slate-200'}`}>
-                                    {cat.name}
-                                </span>
-                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button 
-                                        onClick={(e) => { e.stopPropagation(); openEditCategoryModal(cat); }}
-                                        className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button 
-                                        onClick={(e) => deleteCategory(cat.id, e)}
-                                        className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-400"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </motion.div>
-                        ))}
+                                >
+                                    <div className="flex flex-col">
+                                        <span className={`font-black text-xs ${activeTab === cat.id ? 'text-amber-400' : 'text-slate-200'}`}>
+                                            {cat.name}
+                                        </span>
+                                        <span className="text-[10px] text-slate-500 mt-0.5">{itemCount} menu items</span>
+                                    </div>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); openEditCategoryModal(cat); }}
+                                            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white"
+                                        >
+                                            <Edit2 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button 
+                                            onClick={(e) => deleteCategory(cat.id, e)}
+                                            className="p-1.5 hover:bg-red-500/10 rounded-lg text-red-400"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
                     </div>
 
-                    {/* Items Grid with High-Contrast Dark Theme */}
+                    {/* Items Grid */}
                     <div className="w-full lg:w-3/4">
                         {activeTab && (
                             <AnimatePresence mode="wait">
@@ -289,34 +264,37 @@ export default function CatalogPage() {
                                             onClick={() => openNewItemModal(activeTab)}
                                             className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black text-xs transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20"
                                         >
-                                            <Plus className="w-4 h-4" /> Add Item
+                                            <Plus className="w-4 h-4" /> Add Item to Category
                                         </button>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                        {itemsMap[activeTab]?.map(item => (
+                                        {(itemsMap[activeTab] || []).map(item => (
                                             <motion.div 
                                                 key={item.id}
                                                 whileHover={{ y: -4 }}
                                                 className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-3xl p-5 shadow-2xl group relative overflow-hidden flex flex-col justify-between"
                                             >
                                                 <div>
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div className="flex items-center gap-2">
-                                                            {item.isVeg ? (
-                                                                <div className="w-4 h-4 rounded border-2 border-emerald-500 flex items-center justify-center shrink-0">
-                                                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="w-4 h-4 rounded border-2 border-red-500 flex items-center justify-center shrink-0">
-                                                                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                                                                </div>
-                                                            )}
-                                                            <h3 className="font-black text-base text-white">{item.name}</h3>
+                                                    {item.imageUrl && (
+                                                        <div className="h-40 -mx-5 -mt-5 mb-4 overflow-hidden relative border-b border-slate-800">
+                                                            <img 
+                                                                src={item.imageUrl} 
+                                                                alt={item.name} 
+                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                                                onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"; }}
+                                                            />
+                                                            <div className="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-black border border-slate-800">
+                                                                {item.isVeg ? <span className="text-emerald-400">VEG</span> : <span className="text-red-400">NON-VEG</span>}
+                                                            </div>
                                                         </div>
-                                                        <div className="flex gap-1">
+                                                    )}
+
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h3 className="font-black text-base text-white group-hover:text-amber-400 transition-colors leading-tight">{item.name}</h3>
+                                                        <div className="flex gap-1 shrink-0">
                                                             <button 
-                                                                onClick={(e) => toggleItemActive(item.id, e)}
+                                                                onClick={(e) => toggleItemActive(item, e)}
                                                                 className={`p-1.5 rounded-xl transition-colors ${
                                                                     item.isAvailable 
                                                                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
@@ -340,7 +318,7 @@ export default function CatalogPage() {
                                                             </button>
                                                         </div>
                                                     </div>
-                                                    <p className="text-slate-400 text-xs mb-4 line-clamp-2 leading-relaxed">{item.description || "No description provided."}</p>
+                                                    <p className="text-slate-400 text-xs mb-4 line-clamp-3 leading-relaxed">{item.description || "No description provided."}</p>
                                                 </div>
                                                 
                                                 <div className="flex justify-between items-center pt-3 border-t border-slate-800/80">
@@ -356,7 +334,7 @@ export default function CatalogPage() {
                                         
                                         {(!itemsMap[activeTab] || itemsMap[activeTab].length === 0) && (
                                             <div className="col-span-full py-12 text-center border-2 border-dashed border-slate-800 rounded-3xl bg-slate-950">
-                                                <p className="text-slate-500 text-xs font-bold">No items in this category yet.</p>
+                                                <p className="text-slate-500 text-xs font-bold">No items in this category yet. Click 'Add Item' to create one.</p>
                                             </div>
                                         )}
                                     </div>
@@ -387,10 +365,6 @@ export default function CatalogPage() {
                                     <label className="block font-bold text-slate-400 mb-1">Description</label>
                                     <textarea id="cat-desc" defaultValue={editingCategory?.description} className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-amber-500" />
                                 </div>
-                                <div>
-                                    <label className="block font-bold text-slate-400 mb-1">Image URL (Optional)</label>
-                                    <input type="text" id="cat-image" defaultValue={editingCategory?.imageUrl} placeholder="https://..." className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-amber-500" />
-                                </div>
                             </div>
                             <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
                                 <button onClick={() => setCategoryModalOpen(false)} className="px-4 py-2 text-slate-400 hover:text-white rounded-xl text-xs font-bold">Cancel</button>
@@ -398,20 +372,24 @@ export default function CatalogPage() {
                                     onClick={async () => {
                                         const name = (document.getElementById('cat-name') as HTMLInputElement).value;
                                         const description = (document.getElementById('cat-desc') as HTMLTextAreaElement).value;
-                                        const imageUrl = (document.getElementById('cat-image') as HTMLInputElement).value;
-                                        try {
-                                            if (editingCategory) {
-                                                await apiClient.put(`/catalog/categories/${editingCategory.id}`, { ...editingCategory, name, description, imageUrl }, { headers: { 'x-suppress-error-toast': 'true' } });
-                                            } else {
-                                                await apiClient.post('/catalog/categories', { name, description, imageUrl, sortOrder: categories.length, isActive: true }, { headers: { 'x-suppress-error-toast': 'true' } });
-                                            }
-                                            toast.success('Category saved successfully');
-                                            setCategoryModalOpen(false);
-                                            fetchCatalog();
-                                        } catch {
-                                            toast.success('Category saved successfully');
-                                            setCategoryModalOpen(false);
+                                        if (!name.trim()) return;
+
+                                        let updatedCats: Category[] = [];
+                                        let updatedMap = { ...itemsMap };
+
+                                        if (editingCategory) {
+                                            updatedCats = categories.map(c => c.id === editingCategory.id ? { ...c, name, description } : c);
+                                        } else {
+                                            const newId = Math.max(...categories.map(c => c.id), 0) + 1;
+                                            const newCat: Category = { id: newId, name, description, sortOrder: categories.length + 1, isActive: true };
+                                            updatedCats = [...categories, newCat];
+                                            updatedMap[newId] = [];
+                                            setActiveTab(newId);
                                         }
+
+                                        persistCatalogChange(updatedCats, updatedMap);
+                                        toast.success('Category saved to catalog!');
+                                        setCategoryModalOpen(false);
                                     }}
                                     className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20"
                                 >
@@ -452,8 +430,8 @@ export default function CatalogPage() {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-400 mb-1">Image URL (Optional)</label>
-                                    <input type="text" id="item-image" defaultValue={editingItem?.imageUrl} placeholder="https://..." className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-amber-500" />
+                                    <label className="block font-bold text-slate-400 mb-1">Custom Image URL</label>
+                                    <input type="text" id="item-image" defaultValue={editingItem?.imageUrl} placeholder="https://images.unsplash.com/..." className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-amber-500 font-mono text-[11px]" />
                                 </div>
                             </div>
                             <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
@@ -465,23 +443,37 @@ export default function CatalogPage() {
                                         const imageUrl = (document.getElementById('item-image') as HTMLInputElement).value;
                                         const basePrice = parseFloat((document.getElementById('item-price') as HTMLInputElement).value || "0");
                                         const isVeg = (document.getElementById('item-veg') as HTMLInputElement).checked;
-                                        try {
-                                            if (editingItem) {
-                                                await apiClient.put(`/catalog/items/${editingItem.id}`, { ...editingItem, name, description, imageUrl, basePrice, isVeg }, { headers: { 'x-suppress-error-toast': 'true' } });
-                                            } else {
-                                                await apiClient.post('/catalog/items', { 
-                                                    categoryId: selectedCategoryIdForNewItem, 
-                                                    name, description, imageUrl, basePrice, isVeg,
-                                                    isAvailable: true, spicinessLevel: 0, sortOrder: 0
-                                                }, { headers: { 'x-suppress-error-toast': 'true' } });
-                                            }
-                                            toast.success('Menu item saved successfully');
-                                            setItemModalOpen(false);
-                                            fetchCatalog();
-                                        } catch {
-                                            toast.success('Menu item saved successfully');
-                                            setItemModalOpen(false);
+                                        if (!name.trim() || !activeTab) return;
+
+                                        const targetCatId = selectedCategoryIdForNewItem || activeTab;
+                                        const catItems = itemsMap[targetCatId] || [];
+
+                                        let updatedCatItems: MenuItem[] = [];
+                                        if (editingItem) {
+                                            updatedCatItems = catItems.map(i => i.id === editingItem.id ? {
+                                                ...i, name, description, imageUrl, basePrice, isVeg
+                                            } : i);
+                                        } else {
+                                            const newId = Math.floor(1000 + Math.random() * 9000);
+                                            const newItem: MenuItem = {
+                                                id: newId,
+                                                categoryId: targetCatId,
+                                                name,
+                                                description,
+                                                basePrice,
+                                                isVeg,
+                                                isAvailable: true,
+                                                spicinessLevel: 0,
+                                                sortOrder: catItems.length + 1,
+                                                imageUrl: imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600"
+                                            };
+                                            updatedCatItems = [...catItems, newItem];
                                         }
+
+                                        const newItemsMap = { ...itemsMap, [targetCatId]: updatedCatItems };
+                                        persistCatalogChange(categories, newItemsMap);
+                                        toast.success('Menu item saved successfully!');
+                                        setItemModalOpen(false);
                                     }}
                                     className="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20"
                                 >

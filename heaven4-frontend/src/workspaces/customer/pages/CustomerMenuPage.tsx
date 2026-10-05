@@ -4,6 +4,7 @@ import { ShoppingBag, Plus, Leaf, Sparkles, AlertCircle, Ticket, ChevronRight, A
 import apiClient from '@/core/api/client';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
+import { loadCatalogFromStorage } from '@/shared/utils/catalogData';
 
 interface Category {
     id: number;
@@ -22,72 +23,7 @@ interface MenuItem {
     imageUrl?: string;
 }
 
-const DEFAULT_CATEGORIES: Category[] = [
-    { id: 1, name: '🍔 Burgers & Handhelds', description: 'Gourmet smashed & classic brioche burgers crafted with premium ingredients' },
-    { id: 2, name: '🍕 Wood-Fired Pizzas', description: 'Artisanal sourdough pizzas stone-baked to perfection with organic toppings' },
-    { id: 3, name: '🥗 Starters & Tapas', description: 'Crispy small plates, sharing boards & premium antipasti' },
-    { id: 4, name: '🍝 Mains & Signatures', description: 'Chef curated signature entrées and slow-cooked classics' },
-    { id: 5, name: '🥤 Mocktails & Refreshers', description: 'House-crafted zero-proof drinks, fresh pressed juices & sparkling infusions' },
-    { id: 6, name: '🍸 Cocktails & Fine Spirits', description: 'Award-winning craft cocktails, rare whiskeys & aged tequila' },
-    { id: 7, name: '🍷 Wines & Champagne', description: 'Curated old-world & new-world wine list with rare vintages' },
-    { id: 8, name: '🍰 Artisanal Desserts', description: 'Decadent patisserie-grade sweet treats, molten cakes & handcrafted gelato' },
-];
 
-const DEFAULT_ITEMS: MenuItem[] = [
-    // ── BURGERS (Cat 1) ──
-    { id: 101, categoryId: 1, name: 'Black Angus Double Smash Burger', description: 'Two 100g Black Angus smashed patties, aged cheddar, house pickles, caramelized onion jam & secret smash sauce on a toasted brioche bun.', basePrice: 17.99, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600' },
-    { id: 102, categoryId: 1, name: 'Nashville Hot Chicken Burger', description: 'Crispy buttermilk-brined chicken thigh tossed in Nashville spice blend, creamy slaw, dill pickles & jalapeño mayo on a toasted brioche bun.', basePrice: 15.50, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=600' },
-    { id: 103, categoryId: 1, name: 'Black Truffle Mushroom Melt', description: 'Crispy portobello mushroom patty, black truffle aioli, gruyère cheese, wild rocket & caramelized shallots on toasted sourdough.', basePrice: 14.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=600' },
-    { id: 104, categoryId: 1, name: 'Wagyu Beef Cheese Royale', description: 'Premium A5 Wagyu beef patty, triple-smoked cheddar, bone marrow butter, crispy shallots & Dijon aioli on a buttered pretzel bun.', basePrice: 29.99, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=600' },
-    { id: 105, categoryId: 1, name: 'Beyond Avocado Smash Burger', description: 'Juicy plant-based patty, smashed fresh avocado, roasted tomato salsa, pickled red onion & oat-milk cheddar on a vegan brioche bun.', basePrice: 14.99, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1525059696034-4967a8e1dca2?w=600' },
-
-    // ── PIZZAS (Cat 2) ──
-    { id: 201, categoryId: 2, name: 'Black Truffle & Wild Mushroom', description: 'Sourdough base, portobello, shiitake & oyster mushrooms, fresh mozzarella, wild rocket, black truffle oil & aged pecorino shavings.', basePrice: 22.99, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600' },
-    { id: 202, categoryId: 2, name: 'Pepperoni & Hot Honey Royale', description: 'Double-layer Calabrese pepperoni, san marzano tomato base, fresh mozzarella, drizzled hot chili honey & fresh torn basil.', basePrice: 20.50, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=600' },
-    { id: 203, categoryId: 2, name: 'Burrata di Bufala Margherita', description: 'Imported buffalo burrata, vine-ripened san marzano tomatoes, cold-pressed extra-virgin olive oil, organic basil & Sicilian sea salt.', basePrice: 19.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?w=600' },
-    { id: 204, categoryId: 2, name: 'Prosciutto & Arugula White Pizza', description: 'White roasted garlic cream base, 24-month aged prosciutto di Parma, wild rocket, shaved parmesan & fresh lemon zest.', basePrice: 23.99, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=600' },
-    { id: 205, categoryId: 2, name: 'BBQ Pulled Jackfruit Vegan Pizza', description: 'House BBQ tomato base, slow-braised spiced jackfruit, caramelized onions, roasted red peppers, vegan mozzarella & fresh coriander.', basePrice: 18.99, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600' },
-
-    // ── STARTERS (Cat 3) ──
-    { id: 301, categoryId: 3, name: 'Black Truffle Parmesan Fries', description: 'Twice-fried hand-cut Belgian fries, black truffle butter, shaved aged parmesan, confit roasted garlic & flat-leaf parsley.', basePrice: 9.99, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?w=600' },
-    { id: 302, categoryId: 3, name: 'Tempura Tiger Prawns', description: 'Crispy light tempura-battered tiger prawns, shiso leaf, micro greens, yuzu ponzu dipping sauce & spicy sriracha mayo.', basePrice: 18.00, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=600' },
-    { id: 303, categoryId: 3, name: 'Heaven4 Signature Charcuterie Board', description: 'Curated aged mortadella, copa, soppressata, aged comté & manchego cheese, cornichons, fig chutney, sourdough crostini & candied walnuts.', basePrice: 28.00, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=600' },
-    { id: 304, categoryId: 3, name: 'Burrata & Heirloom Tomato Salad', description: 'Creamy fresh Italian burrata, rainbow heirloom tomatoes, aged balsamic reduction, basil oil, fleur de sel & toasted pine nuts.', basePrice: 16.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600' },
-    { id: 305, categoryId: 3, name: 'Crispy Calamari Fritti', description: 'Panko-dusted squid rings fried golden, lemon zest, sea salt flakes, house garlic aioli, fresh marinara & charred lemon wedges.', basePrice: 15.00, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1519984388953-d2406bc725e1?w=600' },
-
-    // ── MAINS (Cat 4) ──
-    { id: 401, categoryId: 4, name: 'Grilled Atlantic Salmon Fillet', description: 'Pan-seared Atlantic salmon, lemon caper beurre blanc, wilted baby spinach, baby roasted potatoes & fresh micro herbs.', basePrice: 28.50, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600' },
-    { id: 402, categoryId: 4, name: '28-Day Dry Aged Ribeye (300g)', description: 'Premium bone-in ribeye aged 28 days, compound herb butter, roasted garlic head, hand-cut chips & rich black peppercorn jus.', basePrice: 52.00, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=600' },
-    { id: 403, categoryId: 4, name: 'Slow-Braised Beef Short Rib Pasta', description: 'Wide pappardelle pasta, 6-hour red wine braised beef short rib ragu, San Marzano tomatoes, fresh parmesan & torn basil.', basePrice: 24.99, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=600' },
-    { id: 404, categoryId: 4, name: 'Wild Mushroom & Truffle Risotto', description: 'Carnaroli rice, mixed wild mushroom duxelles, black truffle paste, whipped parmesan foam, crispy sage & white truffle oil drizzle.', basePrice: 21.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=600' },
-    { id: 405, categoryId: 4, name: 'Pan-Seared Duck Breast', description: 'French Magret duck breast, sour cherry & Pinot Noir reduction, creamy celeriac purée, haricots verts & crispy potato rosti.', basePrice: 34.00, isVeg: false, imageUrl: 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600' },
-
-    // ── MOCKTAILS (Cat 5) ──
-    { id: 501, categoryId: 5, name: 'Cucumber & Elderflower Spritz', description: 'Fresh muddled cucumber, St-Germain elderflower cordial, fresh lime juice, ginger beer & a fresh rosemary sprig. Elegantly zero-proof.', basePrice: 6.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1498603993951-8a027a8a8f84?w=600' },
-    { id: 502, categoryId: 5, name: 'Watermelon Jalapeño Cooler', description: 'Fresh-pressed watermelon juice, lightly muddled jalapeño, lime, young coconut water & a Himalayan pink salt rim.', basePrice: 7.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1559181567-c3190bbb0f93?w=600' },
-    { id: 503, categoryId: 5, name: 'House Artisanal Peach Iced Tea', description: 'Cold-brewed Darjeeling black tea infused with white peach purée, fresh mint, raw Acacia honey & sparkling water.', basePrice: 5.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600' },
-    { id: 504, categoryId: 5, name: 'Virgin Passion Fruit Mojito', description: 'Crushed fresh mint, ripe passion fruit pulp, freshly squeezed lime, organic cane sugar syrup & premium sparkling soda over crushed ice.', basePrice: 6.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600' },
-    { id: 505, categoryId: 5, name: 'Blue Butterfly Pea Lemonade', description: 'Color-changing butterfly pea flower brew, freshly squeezed lemon, lavender honey syrup & sparkling water. Watch it turn violet-pink!', basePrice: 7.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=600' },
-
-    // ── COCKTAILS (Cat 6) ──
-    { id: 601, categoryId: 6, name: 'Heaven4 Smoked Cherry Negroni', description: 'Campari, Tanqueray gin, sweet vermouth, cherry bitters, hand-torched orange smoke & Angostura. Served over a single polished ice sphere.', basePrice: 18.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600' },
-    { id: 602, categoryId: 6, name: 'Hendricks Botanical Gin & Tonic', description: "Hendrick's gin, Fever-Tree elderflower tonic water, thinly sliced fresh cucumber, pink grapefruit twist & dried juniper berries.", basePrice: 15.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=600' },
-    { id: 603, categoryId: 6, name: 'Dark Rum Passion Fruit Daiquiri', description: 'Havana Club 7yr dark rum, fresh passion fruit coulis, freshly squeezed lime, brown cane sugar & Angostura. Shaken hard over ice.', basePrice: 16.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1572490122747-3a3d536e4b47?w=600' },
-    { id: 604, categoryId: 6, name: 'Aged Reserve Whisky Flight (60ml)', description: 'Rotating reserve cask selection — Glenfarclas 15yr, Macallan Amber or Oban 14yr. Served neat with a drop of Scottish water & a palate note card.', basePrice: 18.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600' },
-
-    // ── WINES (Cat 7) ──
-    { id: 701, categoryId: 7, name: 'Reserve Cabernet Sauvignon (Glass)', description: '2019 Napa Valley. Deep ruby with dark cherry, blackcurrant & cedar. Full-bodied with velvety tannins & a long oak-aged finish. 150ml pour.', basePrice: 16.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600' },
-    { id: 702, categoryId: 7, name: 'Côtes du Rhône Grenache Blanc (Glass)', description: '2021 Southern France. Crisp & floral with notes of white peach, apricot & jasmine. Refreshing mineral finish. 150ml pour.', basePrice: 13.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1584916201218-f4242ceb4809?w=600' },
-    { id: 703, categoryId: 7, name: 'Moët & Chandon Brut Impérial (Glass)', description: 'The iconic French Champagne. Toasted brioche, white peach & honeysuckle on the nose. Fine persistent bubbles & a vibrant chalky finish. 125ml.', basePrice: 22.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1543253687-c931c8e01820?w=600' },
-    { id: 704, categoryId: 7, name: 'Whispering Angel Provence Rosé (Glass)', description: '2022 Côtes de Provence, France. Delicate pale salmon-pink, notes of dried flowers, red berry & fresh cream. The ultimate summer Rosé. 150ml.', basePrice: 17.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1559526323-cb2f2fe2591b?w=600' },
-
-    // ── DESSERTS (Cat 8) ──
-    { id: 801, categoryId: 8, name: 'Molten Dark Chocolate Lava Cake', description: 'Warm 70% Valrhona dark chocolate fondant with a flowing molten center, Madagascar vanilla bean gelato, candied hazelnut praline & cacao dust.', basePrice: 11.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=600' },
-    { id: 802, categoryId: 8, name: 'Crème Brûlée Classique', description: 'Classic Parisian vanilla bean custard with a perfectly caramelized golden sugar crust, fresh seasonal berries & a wafer-thin almond tuile.', basePrice: 9.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1470124182917-cc6e71b22ecc?w=600' },
-    { id: 803, categoryId: 8, name: 'Tiramisu della Casa', description: 'House-made tiramisu with espresso-soaked savoiardi biscuits, Kahlúa-spiked mascarpone cream & premium Dutch cocoa. Set overnight for depth.', basePrice: 10.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=600' },
-    { id: 804, categoryId: 8, name: 'Mango & Coconut Panna Cotta', description: 'Silky Thai coconut panna cotta layered with fresh Alphonso mango compote, passionfruit coulis, toasted coconut flakes & micro lime zest.', basePrice: 9.00, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600' },
-    { id: 805, categoryId: 8, name: 'Artisan Gelato Flight (3 Scoops)', description: 'Your choice of 3 scoops from our daily rotation: Pistachio di Bronte, Stracciatella, Salted Caramel Swirl, Yuzu Sorbet or Fresh Raspberry.', basePrice: 8.50, isVeg: true, imageUrl: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=600' },
-];
 
 // ── DEDICATED EVENT MENU ──────────────────────────────────────────────────────
 const EVENT_MENU_ITEMS = [
@@ -106,8 +42,8 @@ const EVENT_MENU_ITEMS = [
 type MenuTab = 'regular' | 'events';
 
 export default function CustomerMenuPage() {
-    const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
-    const [items, setItems] = useState<MenuItem[]>(DEFAULT_ITEMS);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [items, setItems] = useState<MenuItem[]>([]);
     const [activeCategory, setActiveCategory] = useState<number | null>(1);
     const [menuTab, setMenuTab] = useState<MenuTab>('regular');
     const [activeEventCategory, setActiveEventCategory] = useState<string>('🥂 Event Starters');
@@ -115,8 +51,24 @@ export default function CustomerMenuPage() {
     const { addToCart, items: cartItems } = useCart();
     const navigate = useNavigate();
 
+    const syncCatalogWithStorage = () => {
+        const localData = loadCatalogFromStorage();
+        if (localData.categories.length > 0) {
+            setCategories(localData.categories);
+            const flatItems = Object.values(localData.itemsMap).flat();
+            setItems(flatItems);
+        }
+    };
+
     useEffect(() => {
+        syncCatalogWithStorage();
         fetchCatalog();
+
+        const handleCatalogUpdated = () => {
+            syncCatalogWithStorage();
+        };
+        window.addEventListener('heaven4-catalog-updated', handleCatalogUpdated);
+        return () => window.removeEventListener('heaven4-catalog-updated', handleCatalogUpdated);
     }, []);
 
     const fetchCatalog = async () => {
@@ -129,9 +81,11 @@ export default function CustomerMenuPage() {
                 if (flatItems.length > 0) setItems(flatItems);
                 const firstWithItems = res.data.categories.find((c: any) => res.data.items[c.id]?.length > 0);
                 setActiveCategory(firstWithItems ? firstWithItems.id : res.data.categories[0].id);
+            } else {
+                syncCatalogWithStorage();
             }
         } catch {
-            // Offline — rich fallback menu is set by default
+            syncCatalogWithStorage();
         }
     };
 
