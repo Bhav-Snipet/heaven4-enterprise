@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     MapPin, Music, Ticket, Lock, Globe, X, Clock, Calendar,
-    Sparkles, Key, Building2, UserCheck, Shield, Send, CheckCircle2
+    Key, Building2, UserCheck, Shield, Send, CheckCircle2
 } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useAuth } from '@/core/auth/AuthProvider';
@@ -95,9 +95,9 @@ export default function CustomerEventsPage() {
     const [taxId, setTaxId] = useState('');
     const [contactName, setContactName] = useState(user?.displayName || '');
     const [contactPhone, setContactPhone] = useState(user?.phoneNumber || '7020875435');
-    const [contactEmail, setContactEmail] = useState(user?.email || '');
+    const [contactEmail, _setContactEmail] = useState(user?.email || '');
     const [eventTitleInput, setEventTitleInput] = useState('');
-    const [eventPurposeInput, setEventPurposeInput] = useState('');
+    const [eventPurposeInput, _setEventPurposeInput] = useState('Corporate / Private Social Gathering');
     const [preferredDateInput, setPreferredDateInput] = useState(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
     const [startTimeInput] = useState('07:00 PM');
     const [durationHoursInput, setDurationHoursInput] = useState(4);
@@ -227,7 +227,7 @@ export default function CustomerEventsPage() {
                 contactEmail: contactEmail.trim() || 'contact@heaven4.com',
                 eventTitle: eventTitleInput.trim() || (hostType === 'CORPORATE_FIRM' ? `${companyName} Corporate Gala` : `${contactName} Private Party`),
                 eventPurpose: eventPurposeInput.trim() || 'Corporate / Private Social Gathering',
-                preferredDate: preferredDateInput,
+                preferredDate: preferredDateInput || (new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0] ?? ''),
                 startTime: startTimeInput,
                 durationHours: durationHoursInput,
                 headcount: headcountInput,

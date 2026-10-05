@@ -11,9 +11,6 @@ import {
     getStatusStyle, getEventTypeBadge, formatEventDate, formatEventTime,
     generateInviteToken, getInviteLink, computeEventRevenue, DietaryType, getDietaryBadge, EventMenuItem
 } from '@/shared/utils/eventHelpers';
-import {
-    loadPrivateEventRequests
-} from '@/shared/utils/privateEventHelpers';
 
 interface EventData {
     id: number;

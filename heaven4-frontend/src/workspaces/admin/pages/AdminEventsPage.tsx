@@ -13,7 +13,7 @@ import {
 } from '@/shared/utils/eventHelpers';
 
 import {
-    loadPrivateEventRequests, updatePrivateEventRequestStatus
+    PrivateEventRequest, loadPrivateEventRequests, updatePrivateEventRequestStatus
 } from '@/shared/utils/privateEventHelpers';
 
 interface EventPassBooking {

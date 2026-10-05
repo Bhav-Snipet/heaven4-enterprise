@@ -20,7 +20,9 @@ export default function UserSettingsPage() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const res = await apiClient.get('/users/me');
+                const res = await apiClient.get('/users/me', {
+                    headers: { 'x-suppress-error-toast': 'true' }
+                });
                 setFormData(prev => ({
                     ...prev,
                     firstName: res.data.firstName || '',
@@ -28,9 +30,13 @@ export default function UserSettingsPage() {
                     email: res.data.email || '',
                     dateOfBirth: res.data.dateOfBirth || ''
                 }));
-            } catch (error) {
-                console.error(error);
-                toast.error('Failed to load profile');
+            } catch {
+                // Backend offline — pre-fill from auth context, no error toast
+                setFormData(prev => ({
+                    ...prev,
+                    firstName: user?.displayName?.split(' ')[0] || '',
+                    lastName: user?.displayName?.split(' ').slice(1).join(' ') || '',
+                }));
             } finally {
                 setIsLoading(false);
             }
@@ -61,18 +67,11 @@ export default function UserSettingsPage() {
                 updates.password = formData.password;
             }
 
-            const res = await apiClient.put('/users/me', updates);
+            await apiClient.put('/users/me', updates);
             toast.success('Profile updated successfully!');
             setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
             
-            // Assuming the token is preserved, or we might need to refresh user state
-            // If the user context needs updating:
-            if (user && res.data) {
-                 // user context update if we tracked names
-            }
-            
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error('Failed to update profile');
         } finally {
             setIsSaving(false);

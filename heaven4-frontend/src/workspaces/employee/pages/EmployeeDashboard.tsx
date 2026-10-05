@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, CheckCircle2, User, Clock, Sparkles, MapPin, Utensils, Crown, Printer, ChefHat, Check } from 'lucide-react';
+import { Plus, X, CheckCircle2, User, Utensils, Crown, Printer, ChefHat, Check } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import toast from 'react-hot-toast';
 import {
@@ -22,7 +22,7 @@ interface ActiveOrder {
     orderStatus?: 'PENDING' | 'PREPARING' | 'READY' | 'SERVED';
 }
 
-type ModalType = 'add' | 'close' | 'walkin' | 'complaint' | 'profile' | null;
+type ModalType = 'close' | 'walkin' | null;
 type AreaView = 'NORMAL' | 'EVENT_ROOFTOP' | 'EVENT_BALLROOM';
 
 const DEFAULT_ITEMS: MenuItem[] = [
@@ -53,14 +53,16 @@ export default function EmployeeDashboard() {
     const [isProcessing, setIsProcessing] = useState(false);
 
     const [isClockedIn, setIsClockedIn] = useState(true);
-    const [clockInTime] = useState('09:00 AM');
+    const [clockInTime, setClockInTime] = useState(() => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+
+    const staffEmail = user?.email || `${(user?.displayName || 'staff').toLowerCase().replace(/\s+/g, '.')}@heaven4.com`;
 
     const [staffDetails] = useState({
-        id: '#EMP-501',
+        id: `#EMP-${user?.id || '501'}`,
         name: user?.displayName || 'Alex Rivera',
         role: 'Floor Captain / POS Waiter',
         phone: user?.phoneNumber || '7020875435',
-        email: 'alex.rivera@heaven4.com',
+        email: staffEmail,
         shiftHours: '09:00 AM - 05:00 PM',
         department: 'Dining Floor Operations',
         tablesGoal: 20,
@@ -68,8 +70,15 @@ export default function EmployeeDashboard() {
     });
 
     const toggleClockIn = () => {
-        setIsClockedIn(!isClockedIn);
-        toast.success(!isClockedIn ? 'Clocked IN for shift!' : 'Clocked OUT from shift.');
+        const wasIn = isClockedIn;
+        setIsClockedIn(!wasIn);
+        if (!wasIn) {
+            // Clocking IN: capture current time
+            setClockInTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+            toast.success('Clocked IN for shift!');
+        } else {
+            toast.success('Clocked OUT from shift.');
+        }
     };
 
     const syncTablesWithPlacedOrders = useCallback(() => {
@@ -201,9 +210,9 @@ export default function EmployeeDashboard() {
                 tableNumber: walkInTable,
                 items: walkInItems.length > 0 ? walkInItems : [{ name: 'Gourmet Dine-in Covers', quantity: dineInGuests, price: 15.00 }],
                 subtotal: subtotal || (dineInGuests * 15.00),
-                tax: tax || ((dineInGuests * 15.00) * 0.05),
+                tax: tax || ((dineInGuests * 15.00) * 0.08),
                 tip: 0,
-                total: total || ((dineInGuests * 15.00) * 1.05),
+                total: total || ((dineInGuests * 15.00) * 1.08),
                 placedAt: new Date().toLocaleString(),
                 orderStatus: 'SERVED'
             };
@@ -278,7 +287,7 @@ export default function EmployeeDashboard() {
                         {isClockedIn ? `Clocked In (${clockInTime})` : 'Clocked Out'}
                     </button>
 
-                    <button onClick={() => setModal('profile')}
+                    <button onClick={() => window.location.href = '/employee/settings'}
                         className="bg-slate-900 border border-slate-800 hover:border-blue-500/50 rounded-xl px-4 py-2 flex items-center gap-2.5 text-left shadow-sm">
                         <User className="w-4 h-4 text-blue-400" />
                         <div>
@@ -565,7 +574,7 @@ export default function EmployeeDashboard() {
 
                                         <div className="pt-2 border-t border-slate-800 space-y-1 text-slate-400 text-[11px]">
                                             <div className="flex justify-between"><span>Subtotal</span><span>${activeTableOrder.subtotal.toFixed(2)}</span></div>
-                                            <div className="flex justify-between"><span>GST Tax (5%)</span><span>${activeTableOrder.tax.toFixed(2)}</span></div>
+                                            <div className="flex justify-between"><span>Tax (8%)</span><span>${activeTableOrder.tax.toFixed(2)}</span></div>
                                             {activeTableOrder.tip > 0 && <div className="flex justify-between text-emerald-400"><span>Staff Tip</span><span>+${activeTableOrder.tip.toFixed(2)}</span></div>}
                                             <div className="flex justify-between text-white font-black text-sm pt-1 border-t border-slate-800">
                                                 <span>Total Bill Amount</span>
@@ -608,7 +617,7 @@ export default function EmployeeDashboard() {
                             <div className="space-y-2 pt-2 border-t border-slate-800">
                                 <button
                                     onClick={() => handleSettleBill(selectedTableConfig.tableNumber)}
-                                    disabled={isProcessing || (activeTableOrder && activeTableOrder.orderStatus !== 'SERVED' && activeTableOrder.orderStatus !== 'READY')}
+                                    disabled={isProcessing || !!(activeTableOrder && activeTableOrder.orderStatus !== 'SERVED' && activeTableOrder.orderStatus !== 'READY')}
                                     className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all"
                                 >
                                     <CheckCircle2 className="w-5 h-5" /> Settle Bill & Mark Table FREE

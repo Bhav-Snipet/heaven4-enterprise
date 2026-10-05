@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export interface CartItem {
     menuItemId: number;
@@ -20,8 +20,27 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = 'heaven4_cart';
+
 export function CartProvider({ children }: { children: ReactNode }) {
-    const [items, setItems] = useState<CartItem[]>([]);
+    const [items, setItems] = useState<CartItem[]>(() => {
+        // Hydrate from localStorage on first render
+        try {
+            const raw = localStorage.getItem(CART_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return parsed;
+            }
+        } catch { /* start fresh */ }
+        return [];
+    });
+
+    // Persist cart to localStorage whenever it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+        } catch { /* storage might be full */ }
+    }, [items]);
 
     const addToCart = (newItem: CartItem) => {
         setItems(current => {
@@ -47,7 +66,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems(current => current.map(i => i.menuItemId === menuItemId ? { ...i, quantity } : i));
     };
 
-    const clearCart = () => setItems([]);
+    const clearCart = () => {
+        setItems([]);
+        localStorage.removeItem(CART_STORAGE_KEY);
+    };
 
     const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 

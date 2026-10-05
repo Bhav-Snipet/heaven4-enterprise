@@ -86,7 +86,7 @@ export default function CustomerMenuPage() {
                 else setActiveCategory(res.data.categories[0].id);
             }
         } catch {
-            console.log("Using local default menu items fallback");
+            // Backend offline — local default menu items already set as initial state
         }
     };
 

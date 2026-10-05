@@ -12,7 +12,7 @@ export function useOperationsWebSocket(onMessage: (message: any) => void) {
 
     useEffect(() => {
         const client = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8085/ws'),
+            webSocketFactory: () => new SockJS(import.meta.env.VITE_WS_URL || 'http://localhost:8085/ws'),
             onConnect: () => {
                 client.subscribe('/topic/operations', (msg) => {
                     if (msg.body) {

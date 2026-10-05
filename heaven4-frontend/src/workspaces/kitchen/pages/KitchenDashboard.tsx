@@ -205,7 +205,9 @@ export default function KitchenDashboard() {
     }, [fetchData, syncActiveOrders]);
 
     useEffect(() => { if (tab === 'history') fetchHistory(); }, [tab]);
-    useOperationsWebSocket(() => { fetchData(); });
+    // Memoize the WebSocket handler so it never triggers reconnect on re-renders
+    const handleWsMessage = useCallback(() => { fetchData(); }, [fetchData]);
+    useOperationsWebSocket(handleWsMessage);
 
     // Fetch live event (with fallback to demo)
     useEffect(() => {

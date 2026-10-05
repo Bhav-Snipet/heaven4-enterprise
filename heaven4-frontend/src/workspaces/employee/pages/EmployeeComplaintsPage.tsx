@@ -19,10 +19,13 @@ export default function EmployeeComplaintsPage() {
 
     const fetchComplaints = async () => {
         try {
-            const res = await apiClient.get('/complaints');
-            setComplaints(res.data);
-        } catch (e) {
-            toast.error('Failed to load complaints');
+            const res = await apiClient.get('/complaints', {
+                headers: { 'x-suppress-error-toast': 'true' }
+            });
+            setComplaints(res.data || []);
+        } catch {
+            // Backend offline — silently show empty state, no error toast
+            setComplaints([]);
         } finally {
             setLoading(false);
         }

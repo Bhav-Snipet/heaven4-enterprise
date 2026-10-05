@@ -23,19 +23,15 @@ export default function CustomerProfilePage() {
 
     useEffect(() => {
         const fetchProfile = async () => {
-            try {
-                const res = await apiClient.get('/users/me').catch(() => null);
-                if (res?.data) {
-                    setProfile(prev => ({
-                        ...prev,
-                        firstName: res.data.firstName || prev.firstName,
-                        lastName: res.data.lastName || prev.lastName,
-                        email: res.data.email || prev.email,
-                        dateOfBirth: res.data.dateOfBirth || prev.dateOfBirth
-                    }));
-                }
-            } catch {
-                console.log("Using cached profile state");
+            const res = await apiClient.get('/users/me').catch(() => null);
+            if (res?.data) {
+                setProfile(prev => ({
+                    ...prev,
+                    firstName: res.data.firstName || prev.firstName,
+                    lastName: res.data.lastName || prev.lastName,
+                    email: res.data.email || prev.email,
+                    dateOfBirth: res.data.dateOfBirth || prev.dateOfBirth
+                }));
             }
         };
         fetchProfile();

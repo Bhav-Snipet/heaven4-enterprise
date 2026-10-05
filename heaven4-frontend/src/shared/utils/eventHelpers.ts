@@ -1,6 +1,9 @@
 // src/shared/utils/eventHelpers.ts
 // Heaven4 Events — Shared utility functions used across all workspaces
 
+// Re-export the canonical table validation from tableHelpers so all workspaces use the same source of truth.
+export { isValidTableNumber, getTableConfig } from './tableHelpers';
+
 export type DietaryType = 'VEG' | 'NON_VEG' | 'EGG' | 'BEVERAGE' | 'ALCOHOLIC';
 
 export interface EventMenuItem {
@@ -235,15 +238,8 @@ export function getEventTypeBadge(eventType: string): string {
 }
 
 // ─── Table Validation ─────────────────────────────────────────────────────────
-const VALID_TABLES = [
-  ...Array.from({ length: 20 }, (_, i) => String(i + 1)),
-  ...Array.from({ length: 5 }, (_, i) => `VIP-${i + 1}`),
-];
-
-export function isValidTableNumber(tableNo: string): boolean {
-  if (!tableNo.trim()) return true;
-  return VALID_TABLES.includes(tableNo.trim().toUpperCase());
-}
+// NOTE: isValidTableNumber and getTableConfig are re-exported from tableHelpers at the top of this file.
+// Do NOT add a local implementation here — always use the tableHelpers version which reads the live master table list.
 
 export function computeEventRevenue(ticketPrice: number, totalCapacity: number, availablePasses: number): number {
   const soldPasses = totalCapacity - availablePasses;

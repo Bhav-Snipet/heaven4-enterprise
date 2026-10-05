@@ -40,14 +40,14 @@ export default function OwnerDashboard() {
         { title: 'Gross Revenue (Today)', value: `$${stats.revenueToday.toFixed(2)}`, icon: DollarSign, color: 'text-emerald-400' },
         { title: 'Total Orders', value: stats.ordersToday, icon: ShoppingBag, color: 'text-blue-400' },
         { title: 'Active Tables', value: stats.activeCustomers, icon: Users, color: 'text-purple-400' },
-        { title: 'Avg Order Value', value: `$${stats.averageOrderValue.toFixed(2)}`, icon: TrendingUp, color: 'text-gold-400' },
+        { title: 'Avg Order Value', value: `$${stats.averageOrderValue.toFixed(2)}`, icon: TrendingUp, color: 'text-amber-400' },
     ];
 
-    if (loading) return <div className="flex justify-center p-20"><div className="w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full animate-spin" /></div>;
+    if (loading) return <div className="flex justify-center p-20"><div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>;
 
     return (
         <div className="space-y-6">
-            <h1 className="text-3xl font-bold mb-8 text-gold-400">Executive Overview</h1>
+            <h1 className="text-3xl font-bold mb-8 text-amber-400">Executive Overview</h1>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {metrics.map((m, i) => (

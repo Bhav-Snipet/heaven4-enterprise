@@ -75,13 +75,16 @@ export default function AdminUserManagementPage() {
 
     const updateTier = async (userId: number, tier: string) => {
         if (!tier) return;
+        // Optimistically update UI
+        const previousUsers = users;
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, membershipTier: tier } : u));
         try {
             await apiClient.put(`/admin/users/${userId}/tier`, { tier });
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, membershipTier: tier } : u));
             toast.success(`Customer Tier updated to ${tier} 🎉`);
         } catch {
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, membershipTier: tier } : u));
-            toast.success(`Customer Tier updated to ${tier} 🎉`);
+            // Revert on failure
+            setUsers(previousUsers);
+            toast.error(`Failed to update tier. Please try again.`);
         }
     };
 
