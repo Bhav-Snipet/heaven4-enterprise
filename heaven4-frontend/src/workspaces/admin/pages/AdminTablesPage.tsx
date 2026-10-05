@@ -38,10 +38,21 @@ export default function AdminTablesPage() {
 
     const handleAddTable = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newTableNumber.trim()) { toast.error('Enter a table identifier'); return; }
+        if (!newTableNumber.trim()) { toast.error('Enter a valid table identifier'); return; }
         const cleanNo = newTableNumber.trim().toUpperCase();
-        if (tables.some(t => t.tableNumber.toUpperCase() === cleanNo)) {
-            toast.error(`Table "${cleanNo}" already exists!`);
+
+        if (cleanNo === '0' || cleanNo === '00' || cleanNo === 'INVALID' || cleanNo.startsWith('-')) {
+            toast.error(`❌ Table "${cleanNo}" is an invalid table format!`);
+            return;
+        }
+
+        if (tables.some(t => t.tableNumber.toUpperCase() === cleanNo || t.id.toUpperCase() === cleanNo)) {
+            toast.error(`Table "${cleanNo}" already exists in master roster!`);
+            return;
+        }
+
+        if (newCapacity < 1) {
+            toast.error('Seating capacity must be at least 1 person');
             return;
         }
 

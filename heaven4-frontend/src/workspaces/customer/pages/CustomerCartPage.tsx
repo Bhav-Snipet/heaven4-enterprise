@@ -38,12 +38,12 @@ export default function CustomerCartPage() {
     // Validate table on input change
     useEffect(() => {
         if (!tableNumber.trim()) {
-            setTableValidationError('');
+            setTableValidationError('⚠️ Table number is required to place your order.');
             return;
         }
         const clean = tableNumber.trim().toUpperCase();
         if (!isValidTableNumber(clean)) {
-            setTableValidationError(`❌ Invalid Table "${clean}"! Valid registered tables: B-1 to B-4, T-1 to T-14, VIP-1 to VIP-5.`);
+            setTableValidationError(`❌ Invalid Table "${clean}"! Please enter a valid table (e.g. B-1..4, T-1..14, VIP-1..5).`);
         } else {
             setTableValidationError('');
             localStorage.setItem('heaven4_table_number', clean);

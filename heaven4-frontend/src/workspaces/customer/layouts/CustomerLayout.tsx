@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import apiClient from '@/core/api/client';
+import { isValidTableNumber } from '@/shared/utils/tableHelpers';
 
 export default function CustomerLayout() {
   const { user, logout } = useAuth();
@@ -26,6 +27,10 @@ export default function CustomerLayout() {
     const normalizedTable = tableNo.trim().toUpperCase();
     if (!normalizedTable) {
         toast.error("Please enter your table number first");
+        return;
+    }
+    if (!isValidTableNumber(normalizedTable)) {
+        toast.error(`❌ Table "${normalizedTable}" does not exist in restaurant layout!`);
         return;
     }
     localStorage.setItem('heaven4_table_number', normalizedTable);

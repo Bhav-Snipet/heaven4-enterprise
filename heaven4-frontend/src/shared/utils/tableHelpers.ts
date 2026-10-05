@@ -139,21 +139,53 @@ export function getGroupedMasterTables(tablesToGroup?: TableConfig[]): { categor
 }
 
 export function isValidTableNumber(tableNo: string, eventId?: number): boolean {
-    if (!tableNo.trim()) return true;
-    const tables = loadMasterTables();
+    if (!tableNo || !tableNo.trim()) return false;
     const clean = tableNo.trim().toUpperCase();
-    return tables.some(t => {
-        const matchNo = t.tableNumber.toUpperCase() === clean || t.id.toUpperCase() === clean;
-        if (eventId && t.eventId) return matchNo && t.eventId === eventId;
-        return matchNo;
-    });
+
+    // Reject negative numbers, zero, or explicit invalid strings
+    const numVal = parseInt(clean, 10);
+    if (!isNaN(numVal) && numVal <= 0) return false;
+    if (clean === '0' || clean.startsWith('-') || clean === '00' || clean === 'INVALID') return false;
+
+    const tables = loadMasterTables();
+
+    // Check exact match first
+    const exactMatch = tables.find(t => t.tableNumber.toUpperCase() === clean || t.id.toUpperCase() === clean);
+    if (exactMatch) {
+        if (eventId && exactMatch.eventId) return exactMatch.eventId === eventId;
+        return true;
+    }
+
+    // Check numerical match for single digit / plain integer inputs (e.g. "1", "2", "12")
+    if (!isNaN(numVal) && numVal > 0) {
+        const matchByNum = tables.find(t => extractTableNumber(t.tableNumber) === numVal);
+        if (matchByNum) {
+            if (eventId && matchByNum.eventId) return matchByNum.eventId === eventId;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 export function getTableConfig(tableNo: string): TableConfig | undefined {
-    if (!tableNo.trim()) return undefined;
-    const tables = loadMasterTables();
+    if (!tableNo || !tableNo.trim()) return undefined;
     const clean = tableNo.trim().toUpperCase();
-    return tables.find(t => t.tableNumber.toUpperCase() === clean || t.id.toUpperCase() === clean);
+    
+    const numVal = parseInt(clean, 10);
+    if (!isNaN(numVal) && numVal <= 0) return undefined;
+    if (clean === '0' || clean.startsWith('-') || clean === '00' || clean === 'INVALID') return undefined;
+
+    const tables = loadMasterTables();
+
+    const exactMatch = tables.find(t => t.tableNumber.toUpperCase() === clean || t.id.toUpperCase() === clean);
+    if (exactMatch) return exactMatch;
+
+    if (!isNaN(numVal) && numVal > 0) {
+        return tables.find(t => extractTableNumber(t.tableNumber) === numVal);
+    }
+
+    return undefined;
 }
 
 export function getRecommendedTables(guestCount: number, eventId?: number): TableConfig[] {
