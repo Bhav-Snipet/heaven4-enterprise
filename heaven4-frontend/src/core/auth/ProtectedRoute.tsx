@@ -23,12 +23,12 @@ export function ProtectedRoute({ allowedRoles, allowedWorkspaces }: ProtectedRou
 
     // Role verification
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-        return <Navigate to={`/${user.workspace.toLowerCase()}`} replace />;
+        return <Navigate to={`/${(user.workspace || 'customer').toLowerCase()}`} replace />;
     }
 
     // Workspace verification - DEVELOPER can access any route that includes 'DEVELOPER' in allowedWorkspaces
-    if (allowedWorkspaces && !allowedWorkspaces.includes(user.workspace)) {
-        return <Navigate to={`/${user.workspace.toLowerCase()}`} replace />;
+    if (allowedWorkspaces && user.workspace && !allowedWorkspaces.includes(user.workspace)) {
+        return <Navigate to={`/${(user.workspace || 'customer').toLowerCase()}`} replace />;
     }
 
     return <Outlet />;

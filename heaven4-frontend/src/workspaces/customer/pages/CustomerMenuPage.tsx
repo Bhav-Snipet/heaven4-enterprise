@@ -228,13 +228,14 @@ export default function CustomerMenuPage() {
                             {/* Items Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 <AnimatePresence>
-                                    {displayItems.map(item => (
-                                        <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} whileHover={{ y: -4 }}
-                                            className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col group hover:border-amber-500/40 transition-all">
-                                            {item.imageUrl && (
+                                    {displayItems.map(item => {
+                                        const imgSrc = item.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
+                                        return (
+                                            <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} whileHover={{ y: -4 }}
+                                                className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col group hover:border-amber-500/40 transition-all">
                                                 <div className="h-48 overflow-hidden relative">
-                                                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                                    <img src={imgSrc} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                        onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80"; }} />
                                                     <div className="absolute top-3 left-3 bg-slate-950/85 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-bold border border-slate-800">
                                                         {item.isVeg
                                                             ? <span className="text-emerald-400 flex items-center gap-1 font-black"><Leaf className="w-3 h-3" /> VEG</span>
@@ -244,17 +245,17 @@ export default function CustomerMenuPage() {
                                                         ${item.basePrice.toFixed(2)}
                                                     </div>
                                                 </div>
-                                            )}
-                                            <div className="p-4 flex-1 flex flex-col">
-                                                <h3 className="font-black text-sm text-white group-hover:text-amber-400 transition-colors leading-tight">{item.name}</h3>
-                                                <p className="text-slate-400 text-xs mt-1.5 line-clamp-3 leading-relaxed flex-1">{item.description}</p>
-                                                <button onClick={() => addToCart({ menuItemId: item.id, name: item.name, price: item.basePrice, quantity: 1, imageUrl: item.imageUrl })}
-                                                    className="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-600/30 flex items-center justify-center gap-1.5 transition-all">
-                                                    <Plus className="w-4 h-4" /> Add to Order
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                                <div className="p-4 flex-1 flex flex-col">
+                                                    <h3 className="font-black text-sm text-white group-hover:text-amber-400 transition-colors leading-tight">{item.name}</h3>
+                                                    <p className="text-slate-400 text-xs mt-1.5 line-clamp-3 leading-relaxed flex-1">{item.description}</p>
+                                                    <button onClick={() => addToCart({ menuItemId: item.id, name: item.name, price: item.basePrice, quantity: 1, imageUrl: imgSrc })}
+                                                        className="mt-4 w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs shadow-lg shadow-blue-600/30 flex items-center justify-center gap-1.5 transition-all">
+                                                        <Plus className="w-4 h-4" /> Add to Order
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
                                 </AnimatePresence>
                             </div>
 
@@ -291,26 +292,29 @@ export default function CustomerMenuPage() {
                             {/* Event Items Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <AnimatePresence>
-                                    {displayEventItems.map(item => (
-                                        <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} whileHover={{ y: -4 }}
-                                            className="bg-slate-900 border border-amber-500/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col group hover:border-amber-500/50 transition-all">
-                                            <div className="h-48 overflow-hidden relative">
-                                                <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                                <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black border backdrop-blur-sm ${item.badgeColor} border-current`}>{item.badge}</div>
-                                                <div className="absolute top-3 right-3 bg-amber-500/95 text-slate-950 px-3 py-1 rounded-xl text-sm font-black shadow-lg">${item.price.toFixed(2)}</div>
-                                                <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-slate-900 to-transparent" />
-                                            </div>
-                                            <div className="p-4 flex-1 flex flex-col">
-                                                <h3 className="font-black text-sm text-white group-hover:text-amber-400 transition-colors leading-tight mb-1.5">{item.name}</h3>
-                                                <p className="text-slate-400 text-xs line-clamp-3 leading-relaxed flex-1">{item.description}</p>
-                                                <button onClick={() => addToCart({ menuItemId: parseInt(item.id.replace('ev', '')) + 9900, name: `[EVENT] ${item.name}`, price: item.price, quantity: 1, imageUrl: item.imageUrl })}
-                                                    className="mt-4 w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black text-xs shadow-lg shadow-amber-500/30 flex items-center justify-center gap-1.5 transition-all">
-                                                    <Wine className="w-4 h-4" /> Add to Event Order
-                                                </button>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                    {displayEventItems.map(item => {
+                                        const eventImgSrc = item.imageUrl || "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80";
+                                        return (
+                                            <motion.div key={item.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} whileHover={{ y: -4 }}
+                                                className="bg-slate-900 border border-amber-500/20 rounded-3xl overflow-hidden shadow-2xl flex flex-col group hover:border-amber-500/50 transition-all">
+                                                <div className="h-48 overflow-hidden relative">
+                                                    <img src={eventImgSrc} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                        onError={(e) => { (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80"; }} />
+                                                    <div className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black border backdrop-blur-sm ${item.badgeColor} border-current`}>{item.badge}</div>
+                                                    <div className="absolute top-3 right-3 bg-amber-500/95 text-slate-950 px-3 py-1 rounded-xl text-sm font-black shadow-lg">${item.price.toFixed(2)}</div>
+                                                    <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-slate-900 to-transparent" />
+                                                </div>
+                                                <div className="p-4 flex-1 flex flex-col">
+                                                    <h3 className="font-black text-sm text-white group-hover:text-amber-400 transition-colors leading-tight mb-1.5">{item.name}</h3>
+                                                    <p className="text-slate-400 text-xs line-clamp-3 leading-relaxed flex-1">{item.description}</p>
+                                                    <button onClick={() => addToCart({ menuItemId: parseInt(item.id.replace('ev', '')) + 9900, name: `[EVENT] ${item.name}`, price: item.price, quantity: 1, imageUrl: eventImgSrc })}
+                                                        className="mt-4 w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black text-xs shadow-lg shadow-amber-500/30 flex items-center justify-center gap-1.5 transition-all">
+                                                        <Wine className="w-4 h-4" /> Add to Event Order
+                                                    </button>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
                                 </AnimatePresence>
                             </div>
 

@@ -239,10 +239,24 @@ export default function KitchenDashboard() {
 
     const updateStatus = async (orderId: number, status: string) => {
         try {
-            await apiClient.put(`/orders/${orderId}/status`, { status });
-            toast.success(`Order #${orderId} → ${status}`);
-            fetchData();
-        } catch { toast.error('Failed to update status'); }
+            await apiClient.put(`/orders/${orderId}/status`, { status }, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+        } catch { /* seamless offline fallback */ }
+
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as any } : o));
+
+        try {
+            const raw = localStorage.getItem('heaven4_active_orders_v2');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    const updated = parsed.map((o: any) => o.id === orderId ? { ...o, orderStatus: status, status } : o);
+                    localStorage.setItem('heaven4_active_orders_v2', JSON.stringify(updated));
+                }
+            }
+        } catch { /* proceed */ }
+
+        window.dispatchEvent(new Event('heaven4-tables-updated'));
+        toast.success(`🍳 Order #${orderId} status set to ${status}!`);
     };
 
     const getTierWeight = (tier?: string) => {

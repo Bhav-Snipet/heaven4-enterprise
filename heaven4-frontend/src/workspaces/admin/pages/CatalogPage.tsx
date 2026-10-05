@@ -26,6 +26,37 @@ export interface MenuItem {
     sortOrder: number;
 }
 
+const DEFAULT_CATEGORIES: Category[] = [
+    { id: 1, name: "🍕 Gourmet Pizzas & Pastas", description: "Artisanal stone-baked woodfired pizzas and freshly rolled pasta.", sortOrder: 1, isActive: true },
+    { id: 2, name: "🍸 Artisanal Cocktails & Mocktails", description: "Signature mixology crafted with premium botanicals and house-made syrups.", sortOrder: 2, isActive: true },
+    { id: 3, name: "🥩 Chef's Reserve Entrées", description: "Prime cuts, fresh seafood, and signature gourmet dinner entrees.", sortOrder: 3, isActive: true },
+    { id: 4, name: "🎷 Event Special Menu", description: "Exclusive luxury event offerings for gala functions and private dining.", sortOrder: 4, isActive: true },
+    { id: 5, name: "🍰 Artisanal Desserts", description: "Decadent patisserie items and house-made artisanal gelatos.", sortOrder: 5, isActive: true }
+];
+
+const DEFAULT_ITEMS_MAP: Record<number, MenuItem[]> = {
+    1: [
+        { id: 101, categoryId: 1, name: "Truffle Mushroom Gourmet Pizza", description: "Wild forest mushrooms, black truffle oil, fresh mozzarella, & micro basil.", basePrice: 19.99, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80" },
+        { id: 102, categoryId: 1, name: "Pepperoni Supreme Woodfired Pizza", description: "Artisanal pepperoni slices, aged mozzarella, San Marzano tomato glaze.", basePrice: 22.49, isAvailable: true, isVeg: false, spicinessLevel: 1, sortOrder: 2, imageUrl: "https://images.unsplash.com/photo-1628840042765-356cda07504e?auto=format&fit=crop&w=800&q=80" },
+        { id: 103, categoryId: 1, name: "Fresh Rigatoni Bolognese", description: "Slow-cooked prime beef & pork ragù, Parmigiano-Reggiano, fresh herbs.", basePrice: 24.50, isAvailable: true, isVeg: false, spicinessLevel: 0, sortOrder: 3, imageUrl: "https://images.unsplash.com/photo-1621996346565-e3d5d6281290?auto=format&fit=crop&w=800&q=80" }
+    ],
+    2: [
+        { id: 201, categoryId: 2, name: "Fresh Sparkling Lemon Mint Mojito", description: "Freshly muddled mint, organic lime, sparkling tonic & crushed ice.", basePrice: 5.50, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=80" },
+        { id: 202, categoryId: 2, name: "Botanical Tonic & Gin", description: "Craft dry gin, elderflower tonic, dehydrated citrus & rosemary sprig.", basePrice: 11.50, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 2, imageUrl: "https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&w=800&q=80" }
+    ],
+    3: [
+        { id: 301, categoryId: 3, name: "Pan-Seared Chilean Sea Bass", description: "Sustainably sourced sea bass, saffron risotto, baby leeks, & lemon herb reduction.", basePrice: 34.00, isAvailable: true, isVeg: false, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80" },
+        { id: 302, categoryId: 3, name: "Prime Black Angus Ribeye Steak", description: "12oz USDA Prime ribeye, rosemary garlic butter, truffle parmesan fries.", basePrice: 38.50, isAvailable: true, isVeg: false, spicinessLevel: 0, sortOrder: 2, imageUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80" }
+    ],
+    4: [
+        { id: 401, categoryId: 4, name: "🎷 Truffle Mushroom Bruschetta (Event)", description: "Grilled sourdough topped with roasted forest mushrooms & black truffle glaze.", basePrice: 16.00, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?auto=format&fit=crop&w=800&q=80" },
+        { id: 402, categoryId: 4, name: "🍷 Reserve Cabernet Sauvignon (Event Wine)", description: "Napa Valley 2018 Vintage, notes of dark cherry, oak, & velvet tannins.", basePrice: 18.00, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 2, imageUrl: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80" }
+    ],
+    5: [
+        { id: 501, categoryId: 5, name: "Decadent Belgian Chocolate Lava Cake", description: "Warm molten chocolate core, Tahitian vanilla bean gelato, fresh berries.", basePrice: 9.99, isAvailable: true, isVeg: true, spicinessLevel: 0, sortOrder: 1, imageUrl: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80" }
+    ]
+};
+
 export default function CatalogPage() {
     const [categories, setCategories] = useState<Category[]>([]);
     const [itemsMap, setItemsMap] = useState<Record<number, MenuItem[]>>({});
@@ -42,14 +73,20 @@ export default function CatalogPage() {
     const fetchCatalog = async () => {
         setIsLoading(true);
         try {
-            const res = await apiClient.get('/catalog/full', { headers: { 'x-suppress-error-toast': 'true' } });
-            setCategories(res.data.categories);
-            setItemsMap(res.data.items);
-            if (res.data.categories.length > 0 && activeTab === null) {
-                setActiveTab(res.data.categories[0].id);
+            const res = await apiClient.get('/catalog/full', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+            if (res?.data?.categories && res.data.categories.length > 0) {
+                setCategories(res.data.categories);
+                setItemsMap(res.data.items || {});
+                if (activeTab === null) setActiveTab(1);
+            } else {
+                setCategories(DEFAULT_CATEGORIES);
+                setItemsMap(DEFAULT_ITEMS_MAP);
+                if (activeTab === null) setActiveTab(1);
             }
         } catch {
-            // Keep default catalog if backend fails
+            setCategories(DEFAULT_CATEGORIES);
+            setItemsMap(DEFAULT_ITEMS_MAP);
+            if (activeTab === null) setActiveTab(1);
         } finally {
             setIsLoading(false);
         }
@@ -245,8 +282,8 @@ export default function CatalogPage() {
                                 >
                                     <div className="flex justify-between items-end pb-4 border-b border-slate-800">
                                         <div>
-                                            <h2 className="text-2xl font-black text-white">{categories.find(c => c.id === activeTab)?.name}</h2>
-                                            <p className="text-slate-400 text-xs mt-0.5">{categories.find(c => c.id === activeTab)?.description}</p>
+                                            <h2 className="text-2xl font-black text-white">{categories.find(c => c.id === activeTab)?.name || 'Category'}</h2>
+                                            <p className="text-slate-400 text-xs mt-0.5">{categories.find(c => c.id === activeTab)?.description || ''}</p>
                                         </div>
                                         <button 
                                             onClick={() => openNewItemModal(activeTab)}
