@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Clock, Flame, History, AlertTriangle, User, LogOut, TrendingUp, Crown, Sparkles, ChefHat, ChevronDown, ChevronUp } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useOperationsWebSocket } from '@/core/hooks/useOperationsWebSocket';
+import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 import { useAuth } from '@/core/auth/AuthProvider';
 import toast from 'react-hot-toast';
 
@@ -64,6 +65,7 @@ function OrderTimer({ createdAt }: { createdAt: string }) {
 
 export default function KitchenDashboard() {
     const { user } = useAuth();
+    const { playSound } = useAudioAlerts();
     const [orders, setOrders] = useState<OrderDto[]>([]);
     const [history, setHistory] = useState<OrderDto[]>([]);
     const [complaints, setComplaints] = useState<Complaint[]>([]);
@@ -192,17 +194,32 @@ export default function KitchenDashboard() {
 
     useEffect(() => {
         fetchData();
-        const handleOrderPlaced = () => syncActiveOrders();
+
+        // Instantly react to same-tab order placement + play audio alert
+        const handleOrderPlaced = () => {
+            syncActiveOrders();
+            playSound('new_order'); // 🔔 Kitchen alert sound on new order
+            toast.success('🍳 New order received at kitchen!', { duration: 3000 });
+        };
+
+        // Cross-tab order sync (customer on different tab/window)
+        const handleStorageSync = (e: StorageEvent) => {
+            if (e.key === 'heaven4_active_orders_v2') {
+                syncActiveOrders();
+                playSound('new_order');
+            }
+        };
+
         window.addEventListener('heaven4-order-placed', handleOrderPlaced);
-        window.addEventListener('storage', handleOrderPlaced);
+        window.addEventListener('storage', handleStorageSync);
         const interval = setInterval(syncActiveOrders, 3000);
 
         return () => {
             window.removeEventListener('heaven4-order-placed', handleOrderPlaced);
-            window.removeEventListener('storage', handleOrderPlaced);
+            window.removeEventListener('storage', handleStorageSync);
             clearInterval(interval);
         };
-    }, [fetchData, syncActiveOrders]);
+    }, [fetchData, syncActiveOrders, playSound]);
 
     useEffect(() => { if (tab === 'history') fetchHistory(); }, [tab]);
     // Memoize the WebSocket handler so it never triggers reconnect on re-renders

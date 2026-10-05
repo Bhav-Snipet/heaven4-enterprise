@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, CheckCircle2, User, Utensils, Crown, Printer, ChefHat, Check } from 'lucide-react';
+import { Plus, X, CheckCircle2, User, Utensils, Crown, Printer, ChefHat, Check, Zap } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
+import { useAudioAlerts } from '@/core/contexts/AudioProvider';
 import toast from 'react-hot-toast';
 import {
     loadMasterTables, TableConfig, getRecommendedTables, CATEGORY_DETAILS,
@@ -40,6 +41,7 @@ const DEFAULT_ITEMS: MenuItem[] = [
 
 export default function EmployeeDashboard() {
     const { user } = useAuth();
+    const { playSound } = useAudioAlerts();
     const [masterTables, setMasterTables] = useState<TableConfig[]>([]);
     const [areaView, setAreaView] = useState<AreaView>('NORMAL');
     const [modal, setModal] = useState<ModalType>(null);
@@ -51,6 +53,7 @@ export default function EmployeeDashboard() {
     const [walkInMembershipTier, setWalkInMembershipTier] = useState('GOLD VIP');
     const [dineInGuests, setDineInGuests] = useState<number>(2);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [attentionPulseEnabled, setAttentionPulseEnabled] = useState(true);
 
     const [isClockedIn, setIsClockedIn] = useState(true);
     const [clockInTime, setClockInTime] = useState(() => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -73,7 +76,6 @@ export default function EmployeeDashboard() {
         const wasIn = isClockedIn;
         setIsClockedIn(!wasIn);
         if (!wasIn) {
-            // Clocking IN: capture current time
             setClockInTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
             toast.success('Clocked IN for shift!');
         } else {
@@ -81,7 +83,12 @@ export default function EmployeeDashboard() {
         }
     };
 
-    const syncTablesWithPlacedOrders = useCallback(() => {
+    const occupiedCount = masterTables.filter(t => t.status === 'OCCUPIED').length;
+    // Low pressure threshold is < 6 active tables. Auto-disable pulsing when >= 6 to avoid visual fatigue under rush pressure.
+    const isUnderRushPressure = occupiedCount >= 6;
+    const isAttentionPulseActive = attentionPulseEnabled && !isUnderRushPressure;
+
+    const syncTablesWithPlacedOrders = useCallback((playAudio = false) => {
         const tables = loadMasterTables();
         try {
             const rawOrders = localStorage.getItem('heaven4_active_orders_v2');
@@ -103,18 +110,22 @@ export default function EmployeeDashboard() {
             }
         } catch { /* proceed */ }
         setMasterTables(tables);
-    }, []);
+        if (playAudio) {
+            playSound('new_order');
+            toast('🔔 New live customer order received!', { icon: '🍽️' });
+        }
+    }, [playSound]);
 
     useEffect(() => {
-        syncTablesWithPlacedOrders();
+        syncTablesWithPlacedOrders(false);
 
-        const handleOrderPlaced = () => syncTablesWithPlacedOrders();
-        const handleTablesUpdated = () => syncTablesWithPlacedOrders();
+        const handleOrderPlaced = () => syncTablesWithPlacedOrders(true);
+        const handleTablesUpdated = () => syncTablesWithPlacedOrders(false);
         window.addEventListener('heaven4-order-placed', handleOrderPlaced);
         window.addEventListener('heaven4-tables-updated', handleTablesUpdated);
         window.addEventListener('storage', handleOrderPlaced);
 
-        const interval = setInterval(syncTablesWithPlacedOrders, 3000);
+        const interval = setInterval(() => syncTablesWithPlacedOrders(false), 3000);
 
         return () => {
             window.removeEventListener('heaven4-order-placed', handleOrderPlaced);
@@ -303,13 +314,36 @@ export default function EmployeeDashboard() {
                 </div>
             </header>
 
-            {/* AREA / EVENT SEATING SWITCHER */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
-                <div className="flex items-center gap-2">
-                    <Utensils className="w-5 h-5 text-amber-400" />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Switch Seating Layout & Venue:</span>
+            {/* AREA / EVENT SEATING SWITCHER & PRESSURE PULSE INDICATOR */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col lg:flex-row items-center justify-between gap-3 shadow-xl">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <Utensils className="w-5 h-5 text-amber-400" />
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">Venue Seating Layout:</span>
+                    </div>
+
+                    {/* Attention Pulse Control & Pressure State */}
+                    <button onClick={() => setAttentionPulseEnabled(!attentionPulseEnabled)}
+                        title="Toggles breathing highlight pulse on occupied tables during low pressure hours"
+                        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-2 border transition-all ${
+                            isAttentionPulseActive
+                                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-lg shadow-indigo-500/20'
+                                : isUnderRushPressure
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}>
+                        <Zap className={`w-3.5 h-3.5 ${isAttentionPulseActive ? 'text-indigo-400 animate-bounce' : 'text-slate-500'}`} />
+                        <span>
+                            {isUnderRushPressure
+                                ? '🔥 High Rush Pressure (Pulsing Auto-Disabled)'
+                                : isAttentionPulseActive
+                                ? '✨ Low Pressure Mode: Dynamic Table Pulse Active'
+                                : '⏸️ Table Attention Pulse: Paused'}
+                        </span>
+                    </button>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto overflow-x-auto">
+
+                <div className="flex gap-2 w-full lg:w-auto overflow-x-auto">
                     {[
                         { key: 'NORMAL' as AreaView, label: '🍽️ Main Dining Hall', count: masterTables.filter(t => !t.eventId).length },
                         { key: 'EVENT_ROOFTOP' as AreaView, label: '🎷 Event: Sunset Jazz (Rooftop)', count: masterTables.filter(t => t.eventId === 901 || t.category === 'EVENT_ROOFTOP').length },
@@ -343,25 +377,46 @@ export default function EmployeeDashboard() {
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {section.tables.map(table => (
-                                <motion.div key={table.id} whileHover={{ y: -4 }}
-                                    onClick={() => openTableDetailsModal(table)}
-                                    className={`p-4 rounded-3xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                                        table.status === 'OCCUPIED' ? 'bg-slate-900 border-blue-500 shadow-xl shadow-blue-500/10' :
-                                        table.status === 'RESERVED' ? 'bg-slate-900 border-amber-500/50 shadow-xl shadow-amber-500/10' :
-                                        'bg-slate-950 border-slate-800 hover:border-blue-500/50'
-                                    }`}>
-                                    <div>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="text-2xl font-black text-white">Table {table.tableNumber}</h3>
-                                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                                                table.status === 'OCCUPIED' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
-                                                table.status === 'RESERVED' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                                                'bg-slate-800 text-slate-400 border border-slate-700'
-                                            }`}>
-                                                {table.status}
+                            {section.tables.map(table => {
+                                const isOccupied = table.status === 'OCCUPIED';
+                                const shouldPulseThisTable = isOccupied && isAttentionPulseActive;
+
+                                return (
+                                    <motion.div key={table.id}
+                                        whileHover={{ y: -4 }}
+                                        animate={shouldPulseThisTable ? {
+                                            scale: [1, 1.04, 1],
+                                            borderColor: ['rgba(59, 130, 246, 0.6)', 'rgba(245, 158, 11, 0.9)', 'rgba(59, 130, 246, 0.6)'],
+                                            boxShadow: [
+                                                '0 0 10px rgba(59, 130, 246, 0.2)',
+                                                '0 0 25px rgba(245, 158, 11, 0.5)',
+                                                '0 0 10px rgba(59, 130, 246, 0.2)'
+                                            ]
+                                        } : { scale: 1 }}
+                                        transition={shouldPulseThisTable ? { repeat: Infinity, duration: 2.2, ease: "easeInOut" } : undefined}
+                                        onClick={() => openTableDetailsModal(table)}
+                                        className={`p-4 rounded-3xl border-2 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${
+                                            isOccupied ? 'bg-slate-900 border-blue-500 shadow-xl shadow-blue-500/10' :
+                                            table.status === 'RESERVED' ? 'bg-slate-900 border-amber-500/50 shadow-xl shadow-amber-500/10' :
+                                            'bg-slate-950 border-slate-800 hover:border-blue-500/50'
+                                        }`}>
+                                        {shouldPulseThisTable && (
+                                            <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
                                             </span>
-                                        </div>
+                                        )}
+                                        <div>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="text-2xl font-black text-white">Table {table.tableNumber}</h3>
+                                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                                    table.status === 'OCCUPIED' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                                    table.status === 'RESERVED' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                                    'bg-slate-800 text-slate-400 border border-slate-700'
+                                                }`}>
+                                                    {table.status}
+                                                </span>
+                                            </div>
 
                                         {/* Capacity Badge */}
                                         <div className="mb-2 flex items-center justify-between gap-1 flex-wrap">
@@ -385,7 +440,8 @@ export default function EmployeeDashboard() {
                                         <span className="text-blue-400 font-bold">View Order & Bill</span>
                                     </div>
                                 </motion.div>
-                            ))}
+                            );
+                        })}
                         </div>
                     </div>
                 ))}
