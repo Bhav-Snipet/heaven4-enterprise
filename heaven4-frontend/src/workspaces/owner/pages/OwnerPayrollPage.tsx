@@ -215,22 +215,34 @@ export default function OwnerPayrollPage() {
                 apiClient.get('/owner/payroll', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null)
             ]);
 
-            const mergedStaff = [...ALL_STAFF_MEMBERS];
-            if (usersRes?.data && Array.isArray(usersRes.data)) {
+            let dbStaff: Staff[] = [];
+            if (usersRes?.data && Array.isArray(usersRes.data) && usersRes.data.length > 0) {
+                const seenIds = new Set<number>();
                 usersRes.data.forEach((u: any) => {
-                    const isStaff = u.roles?.some((r: any) => ['EMPLOYEE', 'KITCHEN', 'MANAGER', 'ADMIN'].includes(r.role));
-                    if (isStaff && !mergedStaff.some(s => s.id === u.id)) {
-                        mergedStaff.push({
+                    if (seenIds.has(u.id)) return;
+                    const staffRole = u.roles?.find((r: any) => ['EMPLOYEE', 'KITCHEN', 'MANAGER', 'ADMIN', 'OWNER'].includes(r.role));
+                    if (staffRole) {
+                        seenIds.add(u.id);
+                        let dept = 'Guest Service';
+                        if (staffRole.role === 'KITCHEN') dept = 'Culinary';
+                        else if (staffRole.role === 'MANAGER') dept = 'Operations';
+                        else if (staffRole.role === 'ADMIN') dept = 'Administration';
+                        else if (staffRole.role === 'OWNER') dept = 'Executive';
+
+                        const cleanName = u.displayName && u.displayName.trim() ? u.displayName.trim() : (u.phoneNumber || 'Staff Member');
+
+                        dbStaff.push({
                             id: u.id,
-                            displayName: u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Staff Member',
+                            displayName: cleanName,
                             phoneNumber: u.phoneNumber || '',
-                            role: u.roles[0]?.role || 'EMPLOYEE',
-                            department: 'Staff'
+                            role: staffRole.role,
+                            department: dept
                         });
                     }
                 });
             }
-            setStaffList(mergedStaff);
+            if (dbStaff.length === 0) dbStaff = ALL_STAFF_MEMBERS;
+            setStaffList(dbStaff);
 
             // Load stored payroll records from localStorage + backend
             const storedPayrolls = localStorage.getItem('heaven4_payroll_records');
@@ -369,6 +381,10 @@ export default function OwnerPayrollPage() {
         .filter(p => p.status === 'PAID')
         .reduce((sum, p) => sum + p.netPay, 0);
 
+    const starWaiter = staffList.find(s => s.role === 'EMPLOYEE' && s.department?.includes('Floor')) || staffList.find(s => s.role === 'EMPLOYEE');
+    const starChef = staffList.find(s => s.role === 'KITCHEN') || staffList.find(s => s.displayName.toLowerCase().includes('chef'));
+    const starManager = staffList.find(s => s.role === 'MANAGER' || s.role === 'ADMIN');
+
     return (
         <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 space-y-8 pb-24">
             {/* Header with Live Clock */}
@@ -451,13 +467,13 @@ export default function OwnerPayrollPage() {
                         </div>
                     </div>
 
-                    {/* Top Star Performers (1 per Role) */}
+                    {/* Top Star Performers (1 per Role dynamically from database staff) */}
                     <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="p-4 bg-slate-950 rounded-2xl border border-blue-500/30 flex flex-col justify-between">
                             <div>
                                 <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">⭐ Star Waiter</span>
-                                <h3 className="font-black text-white text-sm mt-1">Alex Rivera</h3>
-                                <p className="text-[10px] text-slate-400">ID: #EMP-501 · Wait Staff</p>
+                                <h3 className="font-black text-white text-sm mt-1">{starWaiter?.displayName || 'Alex Rivera'}</h3>
+                                <p className="text-[10px] text-slate-400">ID: #{starWaiter?.id ? `EMP-${starWaiter.id}` : 'EMP-501'} · Wait Staff</p>
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center">
                                 <span className="text-xs font-black text-blue-400">28 Tables</span>
@@ -468,8 +484,8 @@ export default function OwnerPayrollPage() {
                         <div className="p-4 bg-slate-950 rounded-2xl border border-orange-500/30 flex flex-col justify-between">
                             <div>
                                 <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest block">🍳 Star Chef</span>
-                                <h3 className="font-black text-white text-sm mt-1">Marco Polo</h3>
-                                <p className="text-[10px] text-slate-400">ID: #CHEF-302 · Kitchen</p>
+                                <h3 className="font-black text-white text-sm mt-1">{starChef?.displayName || 'Marco Polo'}</h3>
+                                <p className="text-[10px] text-slate-400">ID: #{starChef?.id ? `CHEF-${starChef.id}` : 'CHEF-302'} · Kitchen</p>
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center">
                                 <span className="text-xs font-black text-orange-400">142 Dishes</span>
@@ -480,8 +496,8 @@ export default function OwnerPayrollPage() {
                         <div className="p-4 bg-slate-950 rounded-2xl border border-purple-500/30 flex flex-col justify-between">
                             <div>
                                 <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest block">👔 Star Manager</span>
-                                <h3 className="font-black text-white text-sm mt-1">Sarah Jenkins</h3>
-                                <p className="text-[10px] text-slate-400">ID: #MGR-201 · Management</p>
+                                <h3 className="font-black text-white text-sm mt-1">{starManager?.displayName || 'Sarah Jenkins'}</h3>
+                                <p className="text-[10px] text-slate-400">ID: #{starManager?.id ? `MGR-${starManager.id}` : 'MGR-201'} · Management</p>
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-800/80 flex justify-between items-center">
                                 <span className="text-xs font-black text-purple-400">99.4% Score</span>

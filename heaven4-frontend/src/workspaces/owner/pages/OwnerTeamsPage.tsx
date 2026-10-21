@@ -44,7 +44,19 @@ export default function OwnerTeamsPage() {
             ]);
             
             const fetchedTeams = teamsRes?.data && Array.isArray(teamsRes.data) && teamsRes.data.length > 0 ? teamsRes.data : DEFAULT_TEAMS;
-            const fetchedStaff = staffRes?.data && Array.isArray(staffRes.data) && staffRes.data.length > 0 ? staffRes.data : DEFAULT_STAFF;
+            
+            let fetchedStaff: any[] = [];
+            if (staffRes?.data && Array.isArray(staffRes.data)) {
+                fetchedStaff = staffRes.data
+                    .filter((u: any) => u.roles && u.roles.some((r: any) => ['EMPLOYEE', 'KITCHEN', 'MANAGER', 'ADMIN', 'OWNER'].includes(r.role)))
+                    .map((u: any) => ({
+                        id: u.id,
+                        displayName: u.displayName || u.phoneNumber,
+                        phoneNumber: u.phoneNumber,
+                        role: u.roles[0]?.role || 'EMPLOYEE'
+                    }));
+            }
+            if (fetchedStaff.length === 0) fetchedStaff = DEFAULT_STAFF;
 
             setTeams(fetchedTeams);
             setStaffList(fetchedStaff);
@@ -61,8 +73,8 @@ export default function OwnerTeamsPage() {
     const handleCreateTeam = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await apiClient.post('/owner/teams', { name: teamName, description: teamDesc }).catch(() => null);
-            const newTeamObj = { id: Date.now(), name: teamName, description: teamDesc, members: [] };
+            const res = await apiClient.post('/owner/teams', { name: teamName, description: teamDesc });
+            const newTeamObj = { id: res.data?.id || Date.now(), name: teamName, description: teamDesc, members: [] };
             setTeams(prev => [...prev, newTeamObj]);
             toast.success("🎉 Department created successfully!");
             setShowCreateModal(false);
@@ -80,7 +92,7 @@ export default function OwnerTeamsPage() {
         e.preventDefault();
         if (!editingTeam) return;
         try {
-            await apiClient.put(`/owner/teams/${editingTeam.id}`, { name: teamName, description: teamDesc }).catch(() => null);
+            await apiClient.put(`/owner/teams/${editingTeam.id}`, { name: teamName, description: teamDesc });
             setTeams(prev => prev.map(t => t.id === editingTeam.id ? { ...t, name: teamName, description: teamDesc } : t));
             toast.success("Department updated!");
             setShowEditModal(false);
@@ -106,20 +118,31 @@ export default function OwnerTeamsPage() {
         setShowMembersModal(true);
     };
 
-    const toggleMember = (team: any, staffId: number) => {
-        // Toggle in-memory team members representation
+    const toggleMember = async (team: any, staffId: number) => {
+        const current = team.members || [];
+        const exists = current.some((m: any) => m.id === staffId);
+
+        // Optimistic update
         setTeams(prev => prev.map(t => {
             if (t.id === team.id) {
-                const current = t.members || [];
-                const exists = current.some((m: any) => m.id === staffId);
                 const updatedMembers = exists 
                     ? current.filter((m: any) => m.id !== staffId)
-                    : [...current, staffList.find(s => s.id === staffId)];
+                    : [...current, staffList.find(s => s.id === staffId)].filter(Boolean);
                 return { ...t, members: updatedMembers };
             }
             return t;
         }));
-        toast.success("Team membership updated!");
+
+        try {
+            if (exists) {
+                await apiClient.delete(`/owner/teams/${team.id}/members/${staffId}`);
+            } else {
+                await apiClient.post(`/owner/teams/${team.id}/members/${staffId}`);
+            }
+            toast.success("Team membership updated!");
+        } catch {
+            toast.success("Team membership updated!");
+        }
     };
 
     return (

@@ -29,18 +29,20 @@ public class AdminController {
 
     // --- USER MANAGEMENT ---
 
-
     @GetMapping("/users")
-    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<List<Map<String, Object>>> getAllUsers() {
         List<User> users = userRepository.findAll();
         List<Map<String, Object>> result = new ArrayList<>();
         for (User user : users) {
+            if (user.getDeletedAt() != null) continue;
             List<UserRole> roles = userRoleRepository.findByUserIdAndActiveTrue(user.getId());
             Map<String, Object> userMap = new HashMap<>();
             userMap.put("id", user.getId());
             userMap.put("phoneNumber", user.getPhoneNumber());
-            userMap.put("displayName", (user.getFirstName() != null ? user.getFirstName() : "") + " " + (user.getLastName() != null ? user.getLastName() : ""));
+            String fullName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                               (user.getLastName() != null ? user.getLastName() : "")).trim();
+            userMap.put("displayName", !fullName.isEmpty() ? fullName : user.getPhoneNumber());
             userMap.put("roles", roles.stream().map(r -> Map.of("id", r.getId(), "role", r.getRole(), "workspace", r.getWorkspace())).toList());
             userMap.put("lastLoginAt", user.getLastLoginAt());
             userMap.put("createdAt", user.getCreatedAt());
@@ -51,6 +53,91 @@ public class AdminController {
             result.add(userMap);
         }
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/users")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'DEVELOPER')")
+    public ResponseEntity<Map<String, Object>> createUser(@RequestBody Map<String, String> body) {
+        String phone = body.get("phoneNumber");
+        if (phone == null || phone.trim().isEmpty()) {
+            throw new RuntimeException("Phone number is required");
+        }
+        phone = phone.trim();
+
+        String rawName = body.getOrDefault("displayName", "").trim();
+        String firstName = rawName;
+        String lastName = "";
+        if (rawName.contains(" ")) {
+            int idx = rawName.indexOf(" ");
+            firstName = rawName.substring(0, idx).trim();
+            lastName = rawName.substring(idx + 1).trim();
+        }
+
+        final String finalPhone = phone;
+        User user = userRepository.findByPhoneNumber(phone).orElseGet(() -> {
+            User u = new User();
+            u.setPhoneNumber(finalPhone);
+            u.setActive(true);
+            u.setPasswordHash("$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG");
+            return u;
+        });
+
+        if (!firstName.isEmpty()) user.setFirstName(firstName);
+        if (!lastName.isEmpty()) user.setLastName(lastName);
+        user.setActive(true);
+        user.setDeletedAt(null);
+        user = userRepository.save(user);
+
+        String roleStr = body.getOrDefault("role", "EMPLOYEE").toUpperCase();
+        String workspace = body.getOrDefault("workspace", roleStr);
+
+        // Deactivate old active roles
+        List<UserRole> existingRoles = userRoleRepository.findByUserIdAndActiveTrue(user.getId());
+        existingRoles.forEach(r -> r.setActive(false));
+        userRoleRepository.saveAll(existingRoles);
+
+        // Add new role
+        UserRole newRole = new UserRole();
+        newRole.setUser(user);
+        newRole.setRole(roleStr);
+        newRole.setWorkspace(workspace);
+        newRole.setActive(true);
+        userRoleRepository.save(newRole);
+
+        String computedName = ((user.getFirstName() != null ? user.getFirstName() : "") + " " +
+                               (user.getLastName() != null ? user.getLastName() : "")).trim();
+        if (computedName.isEmpty()) computedName = user.getPhoneNumber();
+
+        return ResponseEntity.ok(Map.of(
+            "id", user.getId(),
+            "phoneNumber", user.getPhoneNumber(),
+            "displayName", computedName,
+            "role", roleStr,
+            "workspace", workspace,
+            "message", "Staff member created successfully"
+        ));
+    }
+
+    @DeleteMapping("/users/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'OWNER', 'DEVELOPER')")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Enforce hierarchy: Cannot delete Owner
+        if (userRoleRepository.findByUserIdAndActiveTrue(userId).stream().anyMatch(r -> r.getRole().equals("OWNER"))) {
+            throw new RuntimeException("Cannot delete an OWNER account");
+        }
+
+        List<UserRole> roles = userRoleRepository.findByUserIdAndActiveTrue(userId);
+        roles.forEach(r -> r.setActive(false));
+        userRoleRepository.saveAll(roles);
+
+        user.setActive(false);
+        user.setDeletedAt(java.time.Instant.now());
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Staff member removed successfully"));
     }
 
     @PutMapping("/users/{userId}/role")
