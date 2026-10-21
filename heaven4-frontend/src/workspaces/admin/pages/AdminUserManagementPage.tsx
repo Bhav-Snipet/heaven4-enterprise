@@ -118,9 +118,12 @@ const MOCK_USERS: UserData[] = [
     const CUSTOMER_ROLES = ['CUSTOMER'];
 
     const filteredUsers = users.filter(u => {
-        const matchesFilter = activeTab === 'CUSTOMERS' 
-            ? (u.id.toString() === filter || u.phoneNumber.includes(filter) || filter === '')
-            : (u.displayName.toLowerCase().includes(filter.toLowerCase()) || u.phoneNumber.includes(filter));
+        const query = filter.trim().toLowerCase();
+        const matchesFilter = query === '' ||
+            (u.displayName && u.displayName.toLowerCase().includes(query)) ||
+            (u.phoneNumber && u.phoneNumber.includes(query)) ||
+            u.id.toString() === query ||
+            (u.membershipTier && u.membershipTier.toLowerCase().includes(query));
         if (!matchesFilter) return false;
         
         const isStaff = u.roles.some(r => STAFF_ROLES.includes(r.role));
@@ -130,6 +133,9 @@ const MOCK_USERS: UserData[] = [
         if (activeTab === 'CUSTOMERS') return isCustomer && !isStaff;
         return false;
     });
+
+    const staffCount = users.filter(u => u.roles.some(r => STAFF_ROLES.includes(r.role))).length;
+    const customerCount = users.filter(u => !u.roles.some(r => STAFF_ROLES.includes(r.role))).length;
 
     return (
         <div className="min-h-screen bg-slate-950 text-white p-6 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -142,9 +148,9 @@ const MOCK_USERS: UserData[] = [
                     <p className="text-xs text-slate-400 mt-1">{users.length} total registered accounts across all workspaces</p>
                 </div>
                 <div className="flex gap-3">
-                    <input placeholder="Search by name or phone..." value={filter} onChange={e => setFilter(e.target.value)}
+                    <input placeholder="Search by name, phone, tier or ID..." value={filter} onChange={e => setFilter(e.target.value)}
                         className="px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-bold placeholder-slate-500 text-xs w-64 outline-none focus:border-blue-500" />
-                    <button onClick={fetchUsers} className="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-600/30">
+                    <button onClick={fetchUsers} className="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-600/30" title="Refresh Users">
                         <RefreshCw className="w-4 h-4" />
                     </button>
                 </div>
@@ -154,18 +160,25 @@ const MOCK_USERS: UserData[] = [
             <div className="flex gap-3 flex-wrap">
                 <button 
                     onClick={() => setActiveTab('STAFF')} 
-                    className={`px-5 py-2.5 rounded-xl font-black text-xs transition-all ${activeTab === 'STAFF' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}>
-                    Staff & Operations Roster
+                    className={`px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${activeTab === 'STAFF' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}>
+                    <span>Staff & Operations Roster</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'STAFF' ? 'bg-slate-950 text-amber-400' : 'bg-slate-800 text-slate-400'}`}>
+                        {staffCount}
+                    </span>
                 </button>
                 <button 
                     onClick={() => setActiveTab('CUSTOMERS')} 
-                    className={`px-5 py-2.5 rounded-xl font-black text-xs transition-all ${activeTab === 'CUSTOMERS' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}>
-                    Customer Profiles & Current Membership Tiers
+                    className={`px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${activeTab === 'CUSTOMERS' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}>
+                    <span>Customer Profiles & Membership Tiers</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === 'CUSTOMERS' ? 'bg-blue-900 text-blue-200' : 'bg-slate-800 text-slate-400'}`}>
+                        {customerCount}
+                    </span>
                 </button>
                 <button 
                     onClick={() => setActiveTab('APPEALS')} 
                     className={`px-5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${activeTab === 'APPEALS' ? 'bg-red-600 text-white shadow-lg shadow-red-600/30' : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'}`}>
-                    Unblock Appeals {appeals.length > 0 && <span className="bg-white text-red-600 px-2 py-0.5 rounded-full text-[10px]">{appeals.length}</span>}
+                    <span>Unblock Appeals</span>
+                    {appeals.length > 0 && <span className="bg-white text-red-600 px-2 py-0.5 rounded-full text-[10px] font-bold">{appeals.length}</span>}
                 </button>
             </div>
 
@@ -249,13 +262,14 @@ const MOCK_USERS: UserData[] = [
                                     <div className="flex gap-2">
                                         {activeTab === 'CUSTOMERS' && (
                                             <select 
+                                                value={user.membershipTier || 'GOLD'}
                                                 onChange={(e) => updateTier(user.id, e.target.value)}
                                                 className="px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-800 bg-slate-950 text-amber-400 outline-none focus:border-amber-500 cursor-pointer"
                                             >
-                                                <option value="" className="bg-slate-900 text-slate-400">Update Tier...</option>
-                                                <option value="SILVER" className="bg-slate-900 text-slate-200">Silver</option>
-                                                <option value="GOLD" className="bg-slate-900 text-amber-400 font-bold">Gold</option>
-                                                <option value="DIAMOND" className="bg-slate-900 text-indigo-300 font-bold">Diamond</option>
+                                                <option value="BRONZE" className="bg-slate-900 text-amber-600 font-bold">Bronze Tier</option>
+                                                <option value="SILVER" className="bg-slate-900 text-slate-300 font-bold">Silver Tier</option>
+                                                <option value="GOLD" className="bg-slate-900 text-amber-400 font-bold">Gold Tier</option>
+                                                <option value="DIAMOND" className="bg-slate-900 text-indigo-300 font-bold">Diamond Tier</option>
                                             </select>
                                         )}
                                         <button 
