@@ -74,4 +74,21 @@ public class CatalogController {
         item.setImageUrl(body.get("imageUrl"));
         return ResponseEntity.ok(menuItemRepository.save(item));
     }
+
+    private static volatile String activeMenuMode = "EVENT_PLUS_DEFAULT";
+
+    @GetMapping("/mode")
+    public ResponseEntity<Map<String, String>> getMenuMode() {
+        return ResponseEntity.ok(Map.of("mode", activeMenuMode));
+    }
+
+    @PutMapping("/mode")
+    public ResponseEntity<Map<String, String>> setMenuMode(@RequestBody Map<String, String> body) {
+        String mode = body.getOrDefault("mode", "EVENT_PLUS_DEFAULT");
+        if (!"DEFAULT".equalsIgnoreCase(mode) && !"EVENT_PLUS_DEFAULT".equalsIgnoreCase(mode)) {
+            mode = "EVENT_PLUS_DEFAULT";
+        }
+        activeMenuMode = mode.toUpperCase();
+        return ResponseEntity.ok(Map.of("mode", activeMenuMode, "message", "Menu mode updated to " + activeMenuMode));
+    }
 }

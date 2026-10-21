@@ -4,7 +4,8 @@ import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Flame, Sparkles, Link2, U
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
 import {
-    Category, MenuItem, loadCatalogFromStorage, saveCatalogToStorage, resetCatalogToDefaults
+    Category, MenuItem, loadCatalogFromStorage, saveCatalogToStorage,
+    getMenuMode, resetCatalogForMode, MenuMode
 } from '@/shared/utils/catalogData';
 
 // ── ITEM FORM STATE ────────────────────────────────────────────────────────────
@@ -36,6 +37,7 @@ export default function CatalogPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [menuMode, setMenuModeState] = useState<MenuMode>(() => getMenuMode());
 
     // Modals state
     const [isCategoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -104,8 +106,20 @@ export default function CatalogPage() {
             setCategories(localData.categories);
             setItemsMap(localData.itemsMap);
         };
+        const handleModeUpdated = (e: any) => {
+            if (e.detail && (e.detail === 'DEFAULT' || e.detail === 'EVENT_PLUS_DEFAULT')) {
+                setMenuModeState(e.detail);
+                const localData = loadCatalogFromStorage(e.detail);
+                setCategories(localData.categories);
+                setItemsMap(localData.itemsMap);
+            }
+        };
         window.addEventListener('heaven4-catalog-updated', handleCatalogUpdated);
-        return () => window.removeEventListener('heaven4-catalog-updated', handleCatalogUpdated);
+        window.addEventListener('heaven4-menu-mode-updated', handleModeUpdated as EventListener);
+        return () => {
+            window.removeEventListener('heaven4-catalog-updated', handleCatalogUpdated);
+            window.removeEventListener('heaven4-menu-mode-updated', handleModeUpdated as EventListener);
+        };
     }, []);
 
     const persistCatalogChange = (updatedCats: Category[], updatedItems: Record<number, MenuItem[]>) => {
@@ -226,15 +240,40 @@ export default function CatalogPage() {
         }
     };
 
+    const handleToggleMenuMode = async () => {
+        const nextMode: MenuMode = menuMode === 'DEFAULT' ? 'EVENT_PLUS_DEFAULT' : 'DEFAULT';
+        setMenuModeState(nextMode);
+
+        const restored = resetCatalogForMode(nextMode);
+        setCategories(restored.categories);
+        setItemsMap(restored.itemsMap);
+
+        if (restored.categories.length > 0) {
+            const hasCurrentTab = restored.categories.some(c => c.id === activeTab);
+            if (!hasCurrentTab && restored.categories[0]) {
+                setActiveTab(restored.categories[0].id);
+            }
+        }
+
+        apiClient.put('/catalog/mode', { mode: nextMode }, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
+
+        if (nextMode === 'DEFAULT') {
+            toast.success('🍽️ Switched to Default Menu! (Event Mode OFF — Standard dining menu active)');
+        } else {
+            toast.success('🎷 Switched to Event + Default Menu! (Event Mode ON — All 9 categories & event specials active)');
+        }
+    };
+
     const handleResetDefaults = () => {
-        if (!confirm('Restore factory menu catalog? This will re-seed all 9 signature categories and menu items.')) return;
-        const restored = resetCatalogToDefaults();
+        const modeLabel = menuMode === 'DEFAULT' ? 'Default Menu (8 categories)' : 'Event + Default Menu (9 categories)';
+        if (!confirm(`Restore factory catalog for ${modeLabel}? This will re-seed all standard categories and dishes.`)) return;
+        const restored = resetCatalogForMode(menuMode);
         setCategories(restored.categories);
         setItemsMap(restored.itemsMap);
         if (restored.categories[0]) {
             setActiveTab(restored.categories[0].id);
         }
-        toast.success('🎉 Factory menu catalog restored!');
+        toast.success(`🎉 Factory catalog restored for ${modeLabel}!`);
     };
 
     // ── Save Category (Backend + LocalStorage) ──────────────────────────────────
@@ -400,11 +439,36 @@ export default function CatalogPage() {
                 </div>
                 <div className="flex flex-wrap gap-2.5">
                     <button
-                        onClick={handleResetDefaults}
-                        title="Restore initial 9 categories and items"
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white font-bold text-xs transition-all flex items-center gap-1.5"
+                        id="admin-menu-mode-switch"
+                        onClick={handleToggleMenuMode}
+                        title={
+                            menuMode === 'DEFAULT'
+                                ? 'Active: Default Menu (No Event). Click to switch to Event + Default Menu.'
+                                : 'Active: Event + Default Menu. Click to switch to Default Menu only (No Event day).'
+                        }
+                        className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 border shadow-lg ${
+                            menuMode === 'DEFAULT'
+                                ? 'bg-blue-950/70 border-blue-500/50 text-blue-300 hover:bg-blue-900/60 shadow-blue-950/40 ring-1 ring-blue-500/20'
+                                : 'bg-amber-950/70 border-amber-500/50 text-amber-300 hover:bg-amber-900/60 shadow-amber-950/40 ring-1 ring-amber-500/20'
+                        }`}
                     >
-                        <RotateCcw className="w-3.5 h-3.5" /> Defaults
+                        <RotateCcw className="w-3.5 h-3.5 text-slate-300" />
+                        <span className="font-black flex items-center gap-1.5">
+                            {menuMode === 'DEFAULT' ? (
+                                <>
+                                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                                    🍽️ Default Menu Active
+                                </>
+                            ) : (
+                                <>
+                                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                    🎷 Event + Default Active
+                                </>
+                            )}
+                        </span>
+                        <span className="ml-1 text-[10px] px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-white font-mono transition-all">
+                            {menuMode === 'DEFAULT' ? 'Switch to Event+Default ➔' : 'Switch to Default (No Event) ➔'}
+                        </span>
                     </button>
                     <button
                         onClick={handleKitchenLoadMode}

@@ -4,7 +4,7 @@ import { ShoppingBag, Plus, Leaf, Sparkles, AlertCircle, Ticket, ChevronRight, S
 import apiClient from '@/core/api/client';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
-import { Category, MenuItem, loadCatalogFromStorage } from '@/shared/utils/catalogData';
+import { Category, MenuItem, loadCatalogFromStorage, getMenuMode, MenuMode } from '@/shared/utils/catalogData';
 
 // ── DEDICATED EVENT MENU ──────────────────────────────────────────────────────
 const EVENT_MENU_ITEMS = [
@@ -31,18 +31,31 @@ export default function CustomerMenuPage() {
     const [error, setError] = useState<string | null>(null);
     const [vegOnly, setVegOnly] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [menuMode, setMenuMode] = useState<MenuMode>(() => getMenuMode());
 
     const { addToCart, items: cartItems } = useCart();
     const navigate = useNavigate();
 
     const syncCatalogWithStorage = () => {
-        const localData = loadCatalogFromStorage();
+        const currentMode = getMenuMode();
+        setMenuMode(currentMode);
+        if (currentMode === 'DEFAULT') {
+            setMenuTab('regular');
+        }
+        const localData = loadCatalogFromStorage(currentMode);
         if (localData.categories.length > 0) {
-            setCategories(localData.categories);
-            const flatItems = Object.values(localData.itemsMap).flat();
+            let validCats = localData.categories;
+            if (currentMode === 'DEFAULT') {
+                validCats = validCats.filter(c => c.id !== 9 && !c.name.toLowerCase().includes('event'));
+            }
+            setCategories(validCats);
+            const flatItems = Object.values(localData.itemsMap).flat().filter(item => {
+                if (currentMode === 'DEFAULT' && item.categoryId === 9) return false;
+                return true;
+            });
             setItems(flatItems);
-            if (!activeCategory && localData.categories[0]) {
-                setActiveCategory(localData.categories[0].id);
+            if (!validCats.some(c => c.id === activeCategory)) {
+                setActiveCategory(validCats[0]?.id || 1);
             }
         }
     };
@@ -50,13 +63,15 @@ export default function CustomerMenuPage() {
     const fetchCatalog = async () => {
         try {
             setError(null);
-            const localData = loadCatalogFromStorage();
+            const currentMode = getMenuMode();
+            const localData = loadCatalogFromStorage(currentMode);
             let finalCategories = [...localData.categories];
             let finalItemsMap: Record<number, MenuItem[]> = { ...localData.itemsMap };
 
             const res = await apiClient.get('/catalog/full', { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
             if (res?.data?.categories && Array.isArray(res.data.categories) && res.data.categories.length > 0) {
                 res.data.categories.forEach((bCat: Category) => {
+                    if (currentMode === 'DEFAULT' && (bCat.id === 9 || bCat.name.toLowerCase().includes('event'))) return;
                     if (!finalCategories.some(c => c.id === bCat.id)) {
                         finalCategories.push(bCat);
                     }
@@ -64,6 +79,7 @@ export default function CustomerMenuPage() {
                 if (res.data.items) {
                     Object.keys(res.data.items).forEach(k => {
                         const numK = Number(k);
+                        if (currentMode === 'DEFAULT' && numK === 9) return;
                         const bList = res.data.items[k] || [];
                         const currentList = finalItemsMap[numK] || [];
                         bList.forEach((bItem: MenuItem) => {
@@ -76,10 +92,17 @@ export default function CustomerMenuPage() {
                 }
             }
 
+            if (currentMode === 'DEFAULT') {
+                finalCategories = finalCategories.filter(c => c.id !== 9 && !c.name.toLowerCase().includes('event'));
+            }
+
             setCategories(finalCategories);
-            const flatItems = Object.values(finalItemsMap).flat();
+            const flatItems = Object.values(finalItemsMap).flat().filter(item => {
+                if (currentMode === 'DEFAULT' && item.categoryId === 9) return false;
+                return true;
+            });
             setItems(flatItems);
-            if (!activeCategory && finalCategories[0]) {
+            if (!finalCategories.some(c => c.id === activeCategory) && finalCategories[0]) {
                 setActiveCategory(finalCategories[0].id);
             }
         } catch {
@@ -91,11 +114,36 @@ export default function CustomerMenuPage() {
         syncCatalogWithStorage();
         fetchCatalog();
 
+        // Also sync mode from backend
+        apiClient.get('/catalog/mode', { headers: { 'x-suppress-error-toast': 'true' } })
+            .then(res => {
+                if (res?.data?.mode && (res.data.mode === 'DEFAULT' || res.data.mode === 'EVENT_PLUS_DEFAULT')) {
+                    setMenuMode(res.data.mode as MenuMode);
+                    localStorage.setItem('heaven4_menu_mode', res.data.mode);
+                    syncCatalogWithStorage();
+                }
+            })
+            .catch(() => null);
+
         const handleCatalogUpdated = () => {
             syncCatalogWithStorage();
         };
+        const handleModeUpdated = (e: any) => {
+            if (e.detail && (e.detail === 'DEFAULT' || e.detail === 'EVENT_PLUS_DEFAULT')) {
+                setMenuMode(e.detail as MenuMode);
+                if (e.detail === 'DEFAULT') {
+                    setMenuTab('regular');
+                }
+                syncCatalogWithStorage();
+            }
+        };
+
         window.addEventListener('heaven4-catalog-updated', handleCatalogUpdated);
-        return () => window.removeEventListener('heaven4-catalog-updated', handleCatalogUpdated);
+        window.addEventListener('heaven4-menu-mode-updated', handleModeUpdated as EventListener);
+        return () => {
+            window.removeEventListener('heaven4-catalog-updated', handleCatalogUpdated);
+            window.removeEventListener('heaven4-menu-mode-updated', handleModeUpdated as EventListener);
+        };
     }, []);
 
     const rawCategoryItems = items.filter(i => i.categoryId === activeCategory);
@@ -153,28 +201,51 @@ export default function CustomerMenuPage() {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 pt-6 space-y-6">
-                {/* ── Event Night Banner ── */}
-                <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-                    className="p-4 bg-gradient-to-r from-amber-950/40 via-purple-950/40 to-slate-900 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
-                            <Ticket className="w-6 h-6 text-amber-400" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                                <span className="px-2.5 py-0.5 bg-red-500/20 text-red-300 text-[10px] font-black rounded-full border border-red-500/30 flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" /> LIVE EVENT TONIGHT
-                                </span>
-                                <span className="text-xs font-black text-amber-300">🎷 Sunset Rooftop Jazz & Wine Night</span>
+                {/* ── Event Night Banner vs Standard Dining Banner ── */}
+                {menuMode === 'EVENT_PLUS_DEFAULT' ? (
+                    <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                        className="p-4 bg-gradient-to-r from-amber-950/40 via-purple-950/40 to-slate-900 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0">
+                                <Ticket className="w-6 h-6 text-amber-400" />
                             </div>
-                            <p className="text-xs text-slate-300">Rooftop Lounge · Live Sax & Wine Tasting · VIP Tables Available Now</p>
+                            <div>
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                    <span className="px-2.5 py-0.5 bg-red-500/20 text-red-300 text-[10px] font-black rounded-full border border-red-500/30 flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" /> LIVE EVENT TONIGHT
+                                    </span>
+                                    <span className="text-xs font-black text-amber-300">🎷 Sunset Rooftop Jazz & Wine Night</span>
+                                </div>
+                                <p className="text-xs text-slate-300">Rooftop Lounge · Live Sax & Wine Tasting · VIP Tables Available Now</p>
+                            </div>
                         </div>
-                    </div>
-                    <button onClick={() => navigate('/customer/events')}
-                        className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/30 flex items-center gap-1.5 transition-all shrink-0">
-                        Browse & Book Events <ChevronRight className="w-4 h-4" />
-                    </button>
-                </motion.div>
+                        <button onClick={() => navigate('/customer/events')}
+                            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/30 flex items-center gap-1.5 transition-all shrink-0">
+                            Browse & Book Events <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </motion.div>
+                ) : (
+                    <motion.div initial={{ y: -10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+                        className="p-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0 text-blue-400">
+                                <Sparkles className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                    <span className="px-2.5 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-black rounded-full border border-blue-500/30 flex items-center gap-1">
+                                        🍽️ DEFAULT DINING MENU
+                                    </span>
+                                    <span className="text-xs font-black text-white">Daily Artisanal Dining & Bar</span>
+                                </div>
+                                <p className="text-xs text-slate-400">Fresh artisanal burgers, stone-baked pizzas, tapas, craft cocktails & premium desserts.</p>
+                            </div>
+                        </div>
+                        <span className="text-[11px] px-3 py-1 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 font-bold shrink-0">
+                            Regular Service Mode
+                        </span>
+                    </motion.div>
+                )}
 
                 {error && (
                     <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-xs font-bold flex items-center gap-2">
@@ -189,10 +260,12 @@ export default function CustomerMenuPage() {
                             className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm transition-all ${menuTab === 'regular' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'}`}>
                             🍽 Dining Menu
                         </button>
-                        <button onClick={() => setMenuTab('events')}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm transition-all ${menuTab === 'events' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'}`}>
-                            <Star className="w-4 h-4" /> Event Special Menu
-                        </button>
+                        {menuMode === 'EVENT_PLUS_DEFAULT' && (
+                            <button onClick={() => setMenuTab('events')}
+                                className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-black text-sm transition-all ${menuTab === 'events' ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'}`}>
+                                <Star className="w-4 h-4" /> Event Special Menu
+                            </button>
+                        )}
                     </div>
 
                     {menuTab === 'regular' && (

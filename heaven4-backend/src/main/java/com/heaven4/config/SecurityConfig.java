@@ -45,6 +45,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_PATHS = {
             "/api/v1/auth/**",
             "/api/v1/catalog/full",
+            "/api/v1/catalog/mode",
             "/api/v1/events/**",
             "/api/v1/coupons/**",
             "/api/v1/owner/coupons/validate/**",

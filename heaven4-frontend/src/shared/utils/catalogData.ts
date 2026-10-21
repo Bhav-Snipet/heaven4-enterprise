@@ -138,13 +138,36 @@ export const INITIAL_ITEMS_MAP: Record<number, MenuItem[]> = {
 // Unified storage keys across all workspaces
 const MASTER_CATS_KEY = 'heaven4_catalog_categories_master';
 const MASTER_ITEMS_KEY = 'heaven4_catalog_items_master';
+export const MENU_MODE_KEY = 'heaven4_menu_mode';
+
+export type MenuMode = 'DEFAULT' | 'EVENT_PLUS_DEFAULT';
+
+export function getMenuMode(): MenuMode {
+    try {
+        const stored = localStorage.getItem(MENU_MODE_KEY);
+        if (stored === 'DEFAULT' || stored === 'EVENT_PLUS_DEFAULT') {
+            return stored;
+        }
+    } catch { /* proceed */ }
+    return 'EVENT_PLUS_DEFAULT';
+}
+
+export function setMenuMode(mode: MenuMode): void {
+    try {
+        localStorage.setItem(MENU_MODE_KEY, mode);
+        window.dispatchEvent(new CustomEvent('heaven4-menu-mode-updated', { detail: mode }));
+        window.dispatchEvent(new Event('heaven4-catalog-updated'));
+    } catch { /* proceed */ }
+}
 
 /**
- * Load complete catalog from storage with guaranteed presence of all 9 categories
- * and full merge of default dishes + any custom dishes added by admin.
+ * Load complete catalog from storage with guaranteed presence of categories
+ * and full merge of default dishes + any custom dishes added by admin,
+ * filtered according to the active MenuMode (Default Only vs Event + Default).
  */
-export function loadCatalogFromStorage(): { categories: Category[]; itemsMap: Record<number, MenuItem[]> } {
+export function loadCatalogFromStorage(forcedMode?: MenuMode): { categories: Category[]; itemsMap: Record<number, MenuItem[]> } {
     try {
+        const mode = forcedMode || getMenuMode();
         let storedCatsRaw = localStorage.getItem(MASTER_CATS_KEY);
         let storedItemsRaw = localStorage.getItem(MASTER_ITEMS_KEY);
 
@@ -165,11 +188,16 @@ export function loadCatalogFromStorage(): { categories: Category[]; itemsMap: Re
         let parsedCats: Category[] = storedCatsRaw ? JSON.parse(storedCatsRaw) : [];
         let parsedItems: Record<number, MenuItem[]> = storedItemsRaw ? JSON.parse(storedItemsRaw) : {};
 
-        // Merge categories: ensure all 9 INITIAL_CATEGORIES exist
+        // Merge categories: ensure INITIAL_CATEGORIES exist
         const catMap = new Map<number, Category>();
         INITIAL_CATEGORIES.forEach(c => catMap.set(c.id, { ...c }));
         parsedCats.forEach(c => catMap.set(c.id, { ...c }));
-        const categories = Array.from(catMap.values()).sort((a, b) => a.sortOrder - b.sortOrder);
+        let categories = Array.from(catMap.values()).sort((a, b) => a.sortOrder - b.sortOrder);
+
+        // Filter based on active mode
+        if (mode === 'DEFAULT') {
+            categories = categories.filter(c => c.id !== 9 && !c.name.toLowerCase().includes('event'));
+        }
 
         // Merge items: for each category, ensure all default dishes exist PLUS any custom dishes created
         const itemsMap: Record<number, MenuItem[]> = {};
@@ -177,12 +205,14 @@ export function loadCatalogFromStorage(): { categories: Category[]; itemsMap: Re
         // Populate with INITIAL_ITEMS_MAP first
         Object.keys(INITIAL_ITEMS_MAP).forEach(catIdStr => {
             const catId = Number(catIdStr);
+            if (mode === 'DEFAULT' && catId === 9) return;
             itemsMap[catId] = [...INITIAL_ITEMS_MAP[catId]!];
         });
 
         // Merge user-modified or newly added items from storage
         Object.keys(parsedItems).forEach(catIdStr => {
             const catId = Number(catIdStr);
+            if (mode === 'DEFAULT' && catId === 9) return;
             const userList = parsedItems[catId] || [];
             const defaultList = itemsMap[catId] || [];
 
@@ -222,7 +252,14 @@ export function loadCatalogFromStorage(): { categories: Category[]; itemsMap: Re
 
         return { categories, itemsMap };
     } catch {
-        return { categories: INITIAL_CATEGORIES, itemsMap: INITIAL_ITEMS_MAP };
+        const mode = forcedMode || getMenuMode();
+        let cats = [...INITIAL_CATEGORIES];
+        let items: Record<number, MenuItem[]> = { ...INITIAL_ITEMS_MAP };
+        if (mode === 'DEFAULT') {
+            cats = cats.filter(c => c.id !== 9);
+            delete items[9];
+        }
+        return { categories: cats, itemsMap: items };
     }
 }
 
@@ -248,12 +285,26 @@ export function saveCatalogToStorage(categories: Category[], itemsMap: Record<nu
 }
 
 /**
- * Reset entire catalog to factory defaults.
+ * Reset and restore catalog according to specific mode:
+ * - 'DEFAULT': restores standard 8 dining categories (No event dishes).
+ * - 'EVENT_PLUS_DEFAULT': restores all 9 categories (Standard + Event specials).
  */
-export function resetCatalogToDefaults(): { categories: Category[]; itemsMap: Record<number, MenuItem[]> } {
+export function resetCatalogForMode(mode: MenuMode): { categories: Category[]; itemsMap: Record<number, MenuItem[]> } {
     try {
-        const catsJson = JSON.stringify(INITIAL_CATEGORIES);
-        const itemsJson = JSON.stringify(INITIAL_ITEMS_MAP);
+        setMenuMode(mode);
+        let cats = [...INITIAL_CATEGORIES];
+        let items: Record<number, MenuItem[]> = {};
+        Object.keys(INITIAL_ITEMS_MAP).forEach(k => {
+            items[Number(k)] = [...INITIAL_ITEMS_MAP[Number(k)]!];
+        });
+
+        if (mode === 'DEFAULT') {
+            cats = cats.filter(c => c.id !== 9 && !c.name.toLowerCase().includes('event'));
+            delete items[9];
+        }
+
+        const catsJson = JSON.stringify(cats);
+        const itemsJson = JSON.stringify(items);
 
         localStorage.setItem(MASTER_CATS_KEY, catsJson);
         localStorage.setItem(MASTER_ITEMS_KEY, itemsJson);
@@ -262,7 +313,17 @@ export function resetCatalogToDefaults(): { categories: Category[]; itemsMap: Re
         localStorage.setItem('heaven4_catalog_categories_v4', catsJson);
         localStorage.setItem('heaven4_catalog_items_v4', itemsJson);
 
+        window.dispatchEvent(new CustomEvent('heaven4-menu-mode-updated', { detail: mode }));
         window.dispatchEvent(new Event('heaven4-catalog-updated'));
-    } catch { /* proceed */ }
-    return { categories: INITIAL_CATEGORIES, itemsMap: INITIAL_ITEMS_MAP };
+        return { categories: cats, itemsMap: items };
+    } catch {
+        return { categories: INITIAL_CATEGORIES, itemsMap: INITIAL_ITEMS_MAP };
+    }
+}
+
+/**
+ * Reset entire catalog to factory defaults based on active mode.
+ */
+export function resetCatalogToDefaults(): { categories: Category[]; itemsMap: Record<number, MenuItem[]> } {
+    return resetCatalogForMode(getMenuMode());
 }
