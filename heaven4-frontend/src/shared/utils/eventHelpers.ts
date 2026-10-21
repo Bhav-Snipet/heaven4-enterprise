@@ -248,6 +248,10 @@ export function computeEventRevenue(ticketPrice: number, totalCapacity: number, 
 
 export function getPassStatusStyle(status: string): { badge: string; label: string } {
   switch (status) {
+    case 'PENDING_APPROVAL':
+      return { badge: 'bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse', label: '⏳ PENDING PAYMENT APPROVAL' };
+    case 'REJECTED':
+      return { badge: 'bg-red-900/30 text-red-400 border border-red-800/40', label: '❌ PAYMENT REJECTED' };
     case 'ATTENDED':
       return { badge: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30', label: 'ATTENDED ✓' };
     case 'CANCELLED':

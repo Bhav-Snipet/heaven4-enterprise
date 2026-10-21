@@ -30,7 +30,9 @@ export default function OwnerTeamsPage() {
     const DEFAULT_TEAMS = [
         { id: 1, name: '🍳 Kitchen Crew', description: 'Head chefs, line cooks, and food prep specialists', members: [DEFAULT_STAFF[1], DEFAULT_STAFF[2]] },
         { id: 2, name: '🍹 Bar & Beverage Staff', description: 'Sommeliers, mixologists, and beverage specialists', members: [DEFAULT_STAFF[3]] },
-        { id: 3, name: '🍽️ Floor Waitstaff', description: 'Floor captains, waiters, and table service runners', members: [DEFAULT_STAFF[0], DEFAULT_STAFF[4], DEFAULT_STAFF[5]] }
+        { id: 3, name: '🍽️ Floor Waitstaff', description: 'Floor captains, waiters, and table service runners', members: [DEFAULT_STAFF[0], DEFAULT_STAFF[4], DEFAULT_STAFF[5]] },
+        { id: 4, name: '🎷 Rooftop Event & Hospitality Hosts', description: 'Event hosts, VIP table concierges, and ticketing staff', members: [DEFAULT_STAFF[0], DEFAULT_STAFF[3]] },
+        { id: 5, name: '🍷 Sommelier & Wine Cellar Curators', description: 'VIP wine pairing specialists, cellar curators, and beverage stewards', members: [DEFAULT_STAFF[3], DEFAULT_STAFF[1]] }
     ];
 
     const fetchData = async () => {

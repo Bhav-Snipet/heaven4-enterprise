@@ -8,6 +8,9 @@ import {
     loadMasterTables, TableConfig, getRecommendedTables, CATEGORY_DETAILS,
     getGroupedMasterTables, saveMasterTables
 } from '@/shared/utils/tableHelpers';
+import { clockInStaff, clockOutStaff } from '@/shared/utils/attendanceHelpers';
+
+import { INITIAL_CATEGORIES, INITIAL_ITEMS_MAP } from '@/shared/utils/catalogData';
 
 interface MenuItem { id: number; name: string; basePrice: number; categoryId: number; isAvailable: boolean; isBeverage?: boolean; }
 
@@ -26,17 +29,18 @@ interface ActiveOrder {
 type ModalType = 'close' | 'walkin' | null;
 type AreaView = 'NORMAL' | 'EVENT_ROOFTOP' | 'EVENT_BALLROOM';
 
-const DEFAULT_ITEMS: MenuItem[] = [
-    { id: 9001, categoryId: 4, name: '🎷 Truffle Mushroom Bruschetta (Event Special)', basePrice: 16.00, isAvailable: true },
-    { id: 9002, categoryId: 4, name: '🍷 Reserve Cabernet Sauvignon (Event Wine)', basePrice: 18.00, isAvailable: true, isBeverage: true },
-    { id: 9003, categoryId: 4, name: '🍸 Event Signature Elderflower Cocktail', basePrice: 14.00, isAvailable: true, isBeverage: true },
-    { id: 8001, categoryId: 3, name: 'Hoppy Citrus Craft IPA Beer (Pint)', basePrice: 8.50, isAvailable: true, isBeverage: true },
-    { id: 8002, categoryId: 3, name: 'Single Malt Aged Reserve Whiskey (60ml)', basePrice: 14.00, isAvailable: true, isBeverage: true },
-    { id: 8003, categoryId: 3, name: 'Botanical Tonic & Gin (90ml)', basePrice: 11.50, isAvailable: true, isBeverage: true },
-    { id: 8004, categoryId: 2, name: 'Fresh Sparkling Lemon Mint Mojito (Mocktail)', basePrice: 5.50, isAvailable: true, isBeverage: true },
-    { id: 8005, categoryId: 2, name: 'Artisanal Peach Iced Tea', basePrice: 4.99, isAvailable: true, isBeverage: true },
-    { id: 8006, categoryId: 1, name: 'Truffle Mushroom Gourmet Pizza', basePrice: 19.99, isAvailable: true },
-    { id: 8007, categoryId: 1, name: 'Pepperoni Supreme Pizza', basePrice: 22.49, isAvailable: true }
+const ALL_FULL_MENU_ITEMS: MenuItem[] = [
+    ...Object.values(INITIAL_ITEMS_MAP).flat().map(i => ({
+        id: i.id,
+        name: i.name,
+        basePrice: i.basePrice,
+        categoryId: i.categoryId,
+        isAvailable: i.isAvailable,
+        isBeverage: [5, 6, 7].includes(i.categoryId)
+    })),
+    { id: 9001, categoryId: 9, name: '🎷 Truffle Mushroom Bruschetta (Event Special)', basePrice: 16.00, isAvailable: true },
+    { id: 9002, categoryId: 9, name: '🍷 Reserve Cabernet Sauvignon (Event Wine)', basePrice: 18.00, isAvailable: true, isBeverage: true },
+    { id: 9003, categoryId: 9, name: '🍸 Event Signature Elderflower Cocktail', basePrice: 14.00, isAvailable: true, isBeverage: true },
 ];
 
 export default function EmployeeDashboard() {
@@ -48,6 +52,8 @@ export default function EmployeeDashboard() {
     const [selectedTableConfig, setSelectedTableConfig] = useState<TableConfig | null>(null);
     const [activeTableOrder, setActiveTableOrder] = useState<ActiveOrder | null>(null);
     const [selectedItems, setSelectedItems] = useState<{ item: MenuItem; qty: number }[]>([]);
+    const [walkInSearch, setWalkInSearch] = useState('');
+    const [walkInCategory, setWalkInCategory] = useState<number | null>(null);
     const [walkInTable, setWalkInTable] = useState('');
     const [walkInCustomerName, setWalkInCustomerName] = useState('');
     const [walkInMembershipTier, setWalkInMembershipTier] = useState('GOLD VIP');
@@ -75,11 +81,14 @@ export default function EmployeeDashboard() {
     const toggleClockIn = () => {
         const wasIn = isClockedIn;
         setIsClockedIn(!wasIn);
+        const staffName = staffDetails.name;
         if (!wasIn) {
+            clockInStaff(staffName, staffDetails.role || 'Floor Captain / Waiter', 'MORNING');
             setClockInTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-            toast.success('Clocked IN for shift!');
+            toast.success('Clocked IN for shift! Attendance record updated.');
         } else {
-            toast.success('Clocked OUT from shift.');
+            clockOutStaff(staffName);
+            toast.success('Clocked OUT from shift. Attendance record updated.');
         }
     };
 
@@ -164,6 +173,11 @@ export default function EmployeeDashboard() {
 
     const handleMarkOrderServed = () => {
         if (!activeTableOrder) return;
+        if (activeTableOrder.orderStatus === 'PENDING') {
+            if (!confirm('⚠️ Kitchen has not started cooking this order yet (Status: PENDING). Are you sure food is cooked and ready to mark SERVED?')) {
+                return;
+            }
+        }
         const updatedOrder: ActiveOrder = { ...activeTableOrder, orderStatus: 'SERVED' };
         setActiveTableOrder(updatedOrder);
 
@@ -172,7 +186,7 @@ export default function EmployeeDashboard() {
             const rawOrders = localStorage.getItem('heaven4_active_orders_v2');
             if (rawOrders) {
                 const orders = JSON.parse(rawOrders);
-                const updated = orders.map((o: any) => o.id === activeTableOrder.id ? { ...o, orderStatus: 'SERVED' } : o);
+                const updated = orders.map((o: any) => o.id === activeTableOrder.id ? { ...o, orderStatus: 'SERVED', status: 'SERVED' } : o);
                 localStorage.setItem('heaven4_active_orders_v2', JSON.stringify(updated));
             }
         } catch { /* proceed */ }
@@ -250,9 +264,25 @@ export default function EmployeeDashboard() {
         } catch { toast.error('Failed to create order'); } finally { setIsProcessing(false); }
     };
 
+    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI_QR' | 'CARD' | 'POINTS'>('UPI_QR');
+    const [paymentPhoto, setPaymentPhoto] = useState<string | null>(null);
+
     const handleSettleBill = async (tableNo: string) => {
         setIsProcessing(true);
         try {
+            // Save settled order details with payment method & attached photo proof in localStorage
+            const settledRecord = {
+                orderId: activeTableOrder?.id || Date.now(),
+                tableNumber: tableNo,
+                totalAmount: activeTableOrder?.total || 0,
+                paymentMethod: paymentMethod,
+                paymentPhoto: paymentPhoto,
+                settledAt: new Date().toISOString(),
+                settledBy: staffDetails.name
+            };
+            const existingSettled = JSON.parse(localStorage.getItem('heaven4_settled_orders') || '[]');
+            localStorage.setItem('heaven4_settled_orders', JSON.stringify([settledRecord, ...existingSettled]));
+
             // Remove order from active orders
             const rawOrders = localStorage.getItem('heaven4_active_orders_v2');
             if (rawOrders) {
@@ -272,10 +302,22 @@ export default function EmployeeDashboard() {
 
             saveMasterTables(updatedTables);
             setMasterTables(updatedTables);
-            toast.success(`💳 Bill Settled & Paid for Table ${tableNo}! Table is now FREE.`);
+            toast.success(`💳 Bill Settled (${paymentMethod}) for Table ${tableNo}! Table is now FREE.`);
             setActiveTableOrder(null);
+            setPaymentPhoto(null);
             setModal(null);
         } catch { toast.error('Failed to settle bill'); } finally { setIsProcessing(false); }
+    };
+
+    const [activeAssistanceCalls, setActiveAssistanceCalls] = useState([
+        { id: 1, tableNumber: 'B-2', text: '🚰 Table B-2 — Water Refill Call', color: 'amber' },
+        { id: 2, tableNumber: 'T-4', text: '💳 Table T-4 — Bill Settlement Call', color: 'blue' },
+    ]);
+
+    const handleMarkCallAttended = (id: number, label: string) => {
+        setActiveAssistanceCalls(prev => prev.filter(c => c.id !== id));
+        playSound('waiter_call');
+        toast.success(`Attended ${label}! Request marked done.`, { icon: '✅' });
     };
 
     return (
@@ -289,7 +331,7 @@ export default function EmployeeDashboard() {
                     </h1>
                     <p className="text-xs text-slate-400 mt-1">Real-time seating capacity, live itemized billing, kitchen status gates, & VIP walk-in overrides.</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     <button onClick={toggleClockIn}
                         className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 border transition-all ${
                             isClockedIn ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'
@@ -313,6 +355,34 @@ export default function EmployeeDashboard() {
                     </button>
                 </div>
             </header>
+
+            {/* 🔔 LIVE WAITER ASSISTANCE & CALLS BANNER */}
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 space-y-2">
+                <div className="flex justify-between items-center">
+                    <span className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                        🔔 Active Waiter Assistance Calls (Water & Bill Calls)
+                    </span>
+                    <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 font-black text-[10px] rounded-full border border-amber-500/40">
+                        {activeAssistanceCalls.length} Pending Call{activeAssistanceCalls.length !== 1 ? 's' : ''}
+                    </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 text-xs">
+                    {activeAssistanceCalls.map(call => (
+                        <div key={call.id} className={`p-2 bg-slate-900 border ${call.color === 'amber' ? 'border-amber-500/40' : 'border-blue-500/40'} rounded-xl flex items-center justify-between gap-3 font-bold`}>
+                            <span className="text-white">{call.text}</span>
+                            <button onClick={() => handleMarkCallAttended(call.id, call.text)}
+                                className={`px-2.5 py-1 ${call.color === 'amber' ? 'bg-amber-500 text-slate-950' : 'bg-blue-600 text-white'} font-black rounded-lg text-[10px] hover:opacity-90 transition-opacity`}>
+                                Mark Attended ✓
+                            </button>
+                        </div>
+                    ))}
+                    {activeAssistanceCalls.length === 0 && (
+                        <p className="text-xs text-emerald-400 font-bold py-1">🎉 All waiter assistance calls resolved & attended!</p>
+                    )}
+                </div>
+            </div>
 
             {/* AREA / EVENT SEATING SWITCHER & PRESSURE PULSE INDICATOR */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 flex flex-col lg:flex-row items-center justify-between gap-3 shadow-xl">
@@ -343,14 +413,14 @@ export default function EmployeeDashboard() {
                     </button>
                 </div>
 
-                <div className="flex gap-2 w-full lg:w-auto overflow-x-auto">
+                <div className="flex flex-wrap gap-2 w-full lg:w-auto">
                     {[
                         { key: 'NORMAL' as AreaView, label: '🍽️ Main Dining Hall', count: masterTables.filter(t => !t.eventId).length },
                         { key: 'EVENT_ROOFTOP' as AreaView, label: '🎷 Event: Sunset Jazz (Rooftop)', count: masterTables.filter(t => t.eventId === 901 || t.category === 'EVENT_ROOFTOP').length },
                         { key: 'EVENT_BALLROOM' as AreaView, label: '💼 Event: Horizon Gala (Ballroom)', count: masterTables.filter(t => t.eventId === 902 || t.category === 'EVENT_BALLROOM').length },
                     ].map(view => (
                         <button key={view.key} onClick={() => setAreaView(view.key)}
-                            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border shrink-0 ${
+                            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all border ${
                                 areaView === view.key
                                     ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md font-black'
                                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
@@ -531,30 +601,115 @@ export default function EmployeeDashboard() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="block font-bold text-slate-400 uppercase tracking-wider">Add Order Items</label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-                                        {DEFAULT_ITEMS.map(item => (
-                                            <div key={item.id} className="flex justify-between items-center p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs">
-                                                <div>
-                                                    <p className="font-bold text-white">{item.name}</p>
-                                                    <p className="text-emerald-400 font-black">${item.basePrice.toFixed(2)}</p>
-                                                </div>
-                                                <button type="button" onClick={() => addItemToOrder(item)}
-                                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg">
-                                                    + Add
+                                    <div className="flex justify-between items-center">
+                                        <label className="block font-bold text-slate-400 uppercase tracking-wider text-xs">Add Order Items (Full Menu)</label>
+                                        <span className="text-[10px] text-emerald-400 font-bold">Showing {
+                                            ALL_FULL_MENU_ITEMS.filter(i => {
+                                                const matchCat = walkInCategory === null || i.categoryId === walkInCategory;
+                                                const matchSearch = !walkInSearch || i.name.toLowerCase().includes(walkInSearch.toLowerCase());
+                                                return matchCat && matchSearch;
+                                            }).length
+                                        } items</span>
+                                    </div>
+
+                                    {/* Search & Category filter */}
+                                    <div className="space-y-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Search any menu item (e.g. Wagyu, Truffle, Mojito)..."
+                                            value={walkInSearch}
+                                            onChange={e => setWalkInSearch(e.target.value)}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                                        />
+                                        <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full text-[10px]">
+                                            <button
+                                                type="button"
+                                                onClick={() => setWalkInCategory(null)}
+                                                className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-all ${
+                                                    walkInCategory === null ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                                                }`}
+                                            >
+                                                All ({ALL_FULL_MENU_ITEMS.length})
+                                            </button>
+                                            {INITIAL_CATEGORIES.map(cat => (
+                                                <button
+                                                    key={cat.id}
+                                                    type="button"
+                                                    onClick={() => setWalkInCategory(cat.id)}
+                                                    className={`px-2.5 py-1 rounded-lg font-bold shrink-0 transition-all ${
+                                                        walkInCategory === cat.id ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                                                    }`}
+                                                >
+                                                    {cat.name}
                                                 </button>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                                        {ALL_FULL_MENU_ITEMS
+                                            .filter(i => {
+                                                const matchCat = walkInCategory === null || i.categoryId === walkInCategory;
+                                                const matchSearch = !walkInSearch || i.name.toLowerCase().includes(walkInSearch.toLowerCase());
+                                                return matchCat && matchSearch;
+                                            })
+                                            .map(item => {
+                                                const existing = selectedItems.find(s => s.item.id === item.id);
+                                                return (
+                                                    <div key={item.id} className="flex justify-between items-center p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs">
+                                                        <div className="min-w-0 pr-2">
+                                                            <p className="font-bold text-white truncate">{item.name}</p>
+                                                            <p className="text-emerald-400 font-black">${item.basePrice.toFixed(2)}</p>
+                                                        </div>
+                                                        {existing ? (
+                                                            <div className="flex items-center gap-1.5 shrink-0 bg-slate-900 border border-slate-700 rounded-lg p-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedItems(prev => prev.map(s => s.item.id === item.id ? { ...s, qty: s.qty - 1 } : s).filter(s => s.qty > 0))}
+                                                                    className="w-5 h-5 bg-slate-800 hover:bg-slate-700 text-white rounded font-bold flex items-center justify-center text-xs"
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <span className="font-black text-amber-400 w-4 text-center">{existing.qty}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addItemToOrder(item)}
+                                                                    className="w-5 h-5 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold flex items-center justify-center text-xs"
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => addItemToOrder(item)}
+                                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg shrink-0"
+                                                            >
+                                                                + Add
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                     </div>
                                 </div>
 
                                 {selectedItems.length > 0 && (
                                     <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 text-xs">
-                                        <p className="font-bold text-slate-400 uppercase">Selected Items ({selectedItems.length})</p>
+                                        <div className="flex justify-between items-center">
+                                            <p className="font-bold text-slate-400 uppercase">Selected Items ({selectedItems.length})</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedItems([])}
+                                                className="text-[10px] text-red-400 hover:text-red-300 font-bold"
+                                            >
+                                                Clear All
+                                            </button>
+                                        </div>
                                         {selectedItems.map((si, idx) => (
                                             <div key={idx} className="flex justify-between items-center">
-                                                <span>{si.item.name} × {si.qty}</span>
-                                                <span className="font-black text-emerald-400">${(si.item.basePrice * si.qty).toFixed(2)}</span>
+                                                <span className="truncate pr-2">{si.item.name} × {si.qty}</span>
+                                                <span className="font-black text-emerald-400 shrink-0">${(si.item.basePrice * si.qty).toFixed(2)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -586,7 +741,19 @@ export default function EmployeeDashboard() {
                                     <h3 className="text-2xl font-black text-white">Table {selectedTableConfig.tableNumber}</h3>
                                     <p className="text-xs text-slate-400">{selectedTableConfig.categoryLabel} · Capacity: {selectedTableConfig.capacity} Seats</p>
                                 </div>
-                                <button onClick={() => setModal(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setWalkInTable(selectedTableConfig.tableNumber);
+                                            setWalkInCustomerName(selectedTableConfig.customerName || 'Dine-in Customer');
+                                            setModal('walkin');
+                                        }}
+                                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+                                    >
+                                        <Plus className="w-4 h-4" /> Take Direct Order
+                                    </button>
+                                    <button onClick={() => setModal(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400"><X className="w-5 h-5" /></button>
+                                </div>
                             </div>
 
                             {/* Customer & VIP Info */}
@@ -640,21 +807,31 @@ export default function EmployeeDashboard() {
                                     </div>
 
                                     {/* Kitchen Preparation Warning vs Ready Notification */}
-                                    {activeTableOrder.orderStatus !== 'SERVED' && activeTableOrder.orderStatus !== 'READY' ? (
-                                        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-300 text-xs font-bold flex items-center justify-between gap-2">
+                                    {activeTableOrder.orderStatus === 'PENDING' || activeTableOrder.orderStatus === 'PREPARING' ? (
+                                        <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-300 text-xs font-bold flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
-                                                <ChefHat className="w-4 h-4 shrink-0 text-amber-400" />
-                                                <span>Order is in preparation in Kitchen. Bill settlement available once served.</span>
+                                                <ChefHat className="w-4 h-4 shrink-0 text-amber-400 animate-pulse" />
+                                                <span>⏳ Order being prepared in Kitchen. Serving locked until Kitchen marks order READY.</span>
                                             </div>
-                                            <button onClick={handleMarkOrderServed} className="px-3 py-1 bg-amber-500 text-slate-950 font-black text-[10px] rounded-lg shrink-0">
-                                                Mark SERVED
+                                            <span className="px-2.5 py-1 bg-slate-800 text-slate-500 font-bold text-[10px] rounded-lg border border-slate-700 shrink-0 cursor-not-allowed">
+                                                🔒 Kitchen Cooking
+                                            </span>
+                                        </div>
+                                    ) : activeTableOrder.orderStatus === 'READY' ? (
+                                        <div className="p-3.5 bg-blue-500/10 border border-blue-500/30 rounded-2xl text-blue-300 text-xs font-bold flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <ChefHat className="w-4 h-4 shrink-0 text-blue-400" />
+                                                <span>🔔 Order READY for pickup from Kitchen counter!</span>
+                                            </div>
+                                            <button onClick={handleMarkOrderServed} className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[11px] rounded-xl shrink-0 shadow-md">
+                                                ✅ Pick Up & Mark SERVED
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-300 text-xs font-bold flex items-center justify-between gap-2">
+                                        <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-300 text-xs font-bold flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
                                                 <Check className="w-4 h-4 shrink-0 text-emerald-400" />
-                                                <span>Order served! Bill is ready for payment settlement.</span>
+                                                <span>Order served to table! Ready for bill settlement.</span>
                                             </div>
                                             <button onClick={printReceipt} className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-blue-300 font-bold text-[10px] rounded-lg border border-slate-700 flex items-center gap-1 shrink-0">
                                                 <Printer className="w-3 h-3" /> Receipt
@@ -669,6 +846,59 @@ export default function EmployeeDashboard() {
                                 </div>
                             )}
 
+                            {/* Payment Method & Evidence Attachment */}
+                            <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                                <div>
+                                    <label className="block font-bold text-slate-400 mb-1 uppercase tracking-wider text-[10px]">Select Payment Settlement Method</label>
+                                    <div className="grid grid-cols-4 gap-1">
+                                        {[
+                                            { key: 'UPI_QR', label: '📲 UPI / QR' },
+                                            { key: 'CASH', label: '💵 Cash' },
+                                            { key: 'CARD', label: '💳 Card' },
+                                            { key: 'POINTS', label: '⭐ Points' }
+                                        ].map(pm => (
+                                            <button key={pm.key} type="button" onClick={() => setPaymentMethod(pm.key as any)}
+                                                className={`py-1.5 px-1 rounded-xl text-[10px] font-black border transition-all ${
+                                                    paymentMethod === pm.key
+                                                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
+                                                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                                                }`}>
+                                                {pm.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {(paymentMethod === 'UPI_QR' || paymentMethod === 'CASH') && (
+                                    <div className="pt-2 border-t border-slate-900">
+                                        <label className="block font-bold text-amber-400 mb-1 text-[10px] uppercase tracking-wider">
+                                            📸 Attach Payment Proof / QR Photo Evidence
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <input 
+                                                type="file" 
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            setPaymentPhoto(reader.result as string);
+                                                            toast.success('📸 Payment proof photo attached!');
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                                className="text-[10px] text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer"
+                                            />
+                                            {paymentPhoto && (
+                                                <span className="text-[10px] text-emerald-400 font-bold">✓ Attached</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Actions */}
                             <div className="space-y-2 pt-2 border-t border-slate-800">
                                 <button
@@ -676,7 +906,7 @@ export default function EmployeeDashboard() {
                                     disabled={isProcessing || !!(activeTableOrder && activeTableOrder.orderStatus !== 'SERVED' && activeTableOrder.orderStatus !== 'READY')}
                                     className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all"
                                 >
-                                    <CheckCircle2 className="w-5 h-5" /> Settle Bill & Mark Table FREE
+                                    <CheckCircle2 className="w-5 h-5" /> Settle Bill ({paymentMethod}) & Mark Table FREE
                                 </button>
                                 
                                 {activeTableOrder && activeTableOrder.orderStatus !== 'SERVED' && activeTableOrder.orderStatus !== 'READY' && (

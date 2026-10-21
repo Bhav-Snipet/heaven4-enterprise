@@ -116,7 +116,9 @@ public class CatalogEngineImpl implements CatalogEngine {
     public Map<String, Object> getFullCatalog(Long branchId) {
         Map<String, Object> catalog = new HashMap<>();
         
-        List<Category> categories = categoryRepository.findByBranchIdOrderBySortOrderAsc(branchId);
+        List<Category> categories = (branchId != null)
+                ? categoryRepository.findByBranchIdOrderBySortOrderAsc(branchId)
+                : categoryRepository.findAllByOrderBySortOrderAsc();
         catalog.put("categories", categories);
         
         Map<Long, List<MenuItem>> itemsByCategory = new HashMap<>();

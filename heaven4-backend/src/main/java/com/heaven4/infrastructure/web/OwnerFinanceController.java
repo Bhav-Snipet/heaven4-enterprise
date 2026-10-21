@@ -27,20 +27,20 @@ public class OwnerFinanceController {
     }
 
     @GetMapping("/reports")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<java.util.List<String>> listReports() {
         return ResponseEntity.ok(reportEngine.listHistoricalReports());
     }
 
     @PostMapping("/reports/generate")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<Map<String, String>> generateReportNow() {
         reportEngine.generateEncryptedDailyReport();
         return ResponseEntity.ok(Map.of("message", "Report generated successfully"));
     }
 
     @GetMapping("/reports/download/{filename}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<byte[]> downloadReport(@org.springframework.web.bind.annotation.PathVariable String filename) {
         byte[] data = reportEngine.downloadEncryptedReport(filename);
         if (data == null) {

@@ -24,13 +24,13 @@ public class PayrollController {
     private final UserRepository userRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<List<Payroll>> getAllPayroll() {
         return ResponseEntity.ok(payrollRepository.findAll());
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<Payroll> createPayroll(@RequestBody Map<String, Object> req) {
         Long userId = Long.valueOf(req.get("userId").toString());
         User user = userRepository.findById(userId).orElseThrow();
@@ -51,7 +51,7 @@ public class PayrollController {
     }
 
     @PutMapping("/{id}/pay")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<Payroll> markAsPaid(
             @PathVariable Long id, 
             @RequestBody Map<String, Object> req) {

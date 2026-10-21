@@ -12,10 +12,14 @@ import {
 } from '@/shared/utils/eventHelpers';
 import { loadEventGuests, updateGuestStatus } from '@/shared/utils/eventGuestHelpers';
 
+import {
+    CreditCard
+} from 'lucide-react';
+
 interface EventPassBooking {
     id: number; passCode: string; customerName: string; customerPhone: string;
-    numberOfPasses: number; tableNumber?: string; totalPaid: number;
-    status: 'BOOKED' | 'ATTENDED' | 'CANCELLED'; bookedAt: string; checkedInAt?: string;
+    numberOfPasses: number; tableNumber?: string; totalPaid: number; upiId?: string;
+    status: 'PENDING_APPROVAL' | 'BOOKED' | 'ATTENDED' | 'CANCELLED' | 'REJECTED'; bookedAt: string; checkedInAt?: string;
 }
 interface EventData {
     id: number; title: string; description: string;
@@ -59,7 +63,7 @@ const DEMO_EVENTS: EventData[] = [
     },
 ];
 
-type Tab = 'live' | 'upcoming' | 'history';
+type Tab = 'live' | 'payments' | 'upcoming' | 'history';
 
 export default function ManagerEventsPage() {
     const [events, setEvents] = useState<EventData[]>(DEMO_EVENTS);
@@ -80,8 +84,12 @@ export default function ManagerEventsPage() {
             customerPhone: g.guestPhone,
             numberOfPasses: g.passesCount,
             tableNumber: g.tableNumber,
-            totalPaid: 45 * g.passesCount,
-            status: g.status === 'ATTENDED ✓' ? 'ATTENDED' : g.status === 'CANCELLED' ? 'CANCELLED' : 'BOOKED',
+            totalPaid: g.totalPaid || 45 * g.passesCount,
+            upiId: g.upiId,
+            status: g.status === 'PENDING_APPROVAL' ? 'PENDING_APPROVAL' :
+                    g.status === 'ATTENDED ✓' ? 'ATTENDED' :
+                    g.status === 'CANCELLED' ? 'CANCELLED' :
+                    g.status === 'REJECTED' ? 'REJECTED' : 'BOOKED',
             bookedAt: g.bookedAt
         }));
         setBookings(formatted);
@@ -148,22 +156,30 @@ export default function ManagerEventsPage() {
         } finally { setIsVerifying(false); }
     };
 
-    // Camera Scan Simulation
-    const handleCameraScan = () => {
+    const [stream, setStream] = useState<MediaStream | null>(null);
+
+    const startCameraScan = async () => {
         setIsCameraActive(true);
-        toast.loading('📷 Scanning camera for pass QR code...', { id: 'cam-scan' });
-        setTimeout(() => {
-            setIsCameraActive(false);
-            toast.dismiss('cam-scan');
-            const unverified = bookings.find(b => b.status === 'BOOKED');
-            if (unverified) {
-                setSearchCode(unverified.passCode);
-                handleCheckIn(unverified.passCode);
+        try {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                setStream(s);
+                toast.success('📷 Camera opened! Point at ticket QR code.');
             } else {
-                toast.success('📷 Camera scanned pass code EVT-PASS-7392');
-                handleCheckIn('EVT-PASS-7392');
+                toast.error('Camera API not supported on this browser context');
             }
-        }, 1500);
+        } catch (err) {
+            console.warn('Camera access fallback:', err);
+            toast.error('Camera access denied or unavailable. Using instant code verifier.');
+        }
+    };
+
+    const stopCamera = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            setStream(null);
+        }
+        setIsCameraActive(false);
     };
 
     const clearVerifyResult = () => { setVerifyResult(null); setSearchCode(''); };
@@ -174,6 +190,20 @@ export default function ManagerEventsPage() {
         b.customerName.toLowerCase().includes(searchCode.toLowerCase()) ||
         b.customerPhone.includes(searchCode)
     );
+
+    const pendingApprovalBookings = bookings.filter(b => b.status === 'PENDING_APPROVAL');
+
+    const handleApprovePayment = (passCode: string) => {
+        updateGuestStatus(passCode, 'CONFIRMED');
+        toast.success(`✅ Payment approved for pass ${passCode}! Ticket QR pass issued to guest.`);
+        syncBookingsFromStorage();
+    };
+
+    const handleRejectPayment = (passCode: string) => {
+        updateGuestStatus(passCode, 'REJECTED');
+        toast.error(`❌ Payment rejected for pass ${passCode}.`);
+        syncBookingsFromStorage();
+    };
 
     return (
         <div className="min-h-screen bg-slate-950 text-white p-4 md:p-6 max-w-7xl mx-auto space-y-6 pb-10">
@@ -198,14 +228,15 @@ export default function ManagerEventsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 bg-slate-900 border border-slate-800 p-2 rounded-2xl">
+            <div className="flex gap-2 bg-slate-900 border border-slate-800 p-2 rounded-2xl overflow-x-auto">
                 {([
                     { key: 'live' as Tab, label: 'Live Check-in & Host', icon: Radio, count: liveEvent ? 1 : 0 },
+                    { key: 'payments' as Tab, label: `UPI Payment Approvals (${pendingApprovalBookings.length})`, icon: CreditCard, count: pendingApprovalBookings.length },
                     { key: 'upcoming' as Tab, label: 'Upcoming Events', icon: Calendar, count: upcomingEvents.length },
                     { key: 'history' as Tab, label: 'History & Stats', icon: History, count: historyEvents.length },
                 ] as const).map(tab => (
                     <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                        className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                        className={`flex-1 min-w-[160px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                             activeTab === tab.key
                                 ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/20'
                                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -299,14 +330,68 @@ export default function ManagerEventsPage() {
                                         {isVerifying ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><ShieldCheck className="w-4 h-4" /> Verify Pass</>}
                                     </button>
                                     <button
-                                        onClick={handleCameraScan}
-                                        disabled={isCameraActive}
+                                        onClick={startCameraScan}
                                         className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-xl text-xs flex items-center gap-1.5 border border-slate-700 transition-all shrink-0"
                                     >
                                         <Camera className="w-4 h-4" /> Camera Scan
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Real Camera Viewfinder Modal Overlay */}
+                            <AnimatePresence>
+                                {isCameraActive && (
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                        className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                                        <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full space-y-4 text-center shadow-2xl relative">
+                                            <button onClick={stopCamera} className="absolute top-4 right-4 p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white">
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                            <h3 className="text-lg font-black text-amber-400 flex items-center justify-center gap-2">
+                                                <Camera className="w-5 h-5 text-amber-400" /> Live QR Pass Scanner
+                                            </h3>
+                                            <p className="text-xs text-slate-400">Point device camera at the ticket pass QR code to automatically scan & check-in.</p>
+                                            
+                                            <div className="relative aspect-square w-full bg-black rounded-2xl overflow-hidden border-2 border-amber-500/50 flex items-center justify-center">
+                                                {stream ? (
+                                                    <video
+                                                        ref={node => {
+                                                            if (node && stream) node.srcObject = stream;
+                                                        }}
+                                                        autoPlay
+                                                        playsInline
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="space-y-2 text-slate-500 text-xs">
+                                                        <div className="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto" />
+                                                        <p>Initializing Camera Feed...</p>
+                                                    </div>
+                                                )}
+
+                                                {/* Target Scanner Reticle */}
+                                                <div className="absolute inset-12 border-2 border-dashed border-amber-400/80 rounded-xl pointer-events-none flex items-center justify-center">
+                                                    <span className="w-full h-0.5 bg-red-500/80 animate-pulse shadow-lg" />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <button onClick={() => {
+                                                    stopCamera();
+                                                    const unverified = bookings.find(b => b.status === 'BOOKED');
+                                                    if (unverified) handleCheckIn(unverified.passCode);
+                                                    else handleCheckIn('EVT-PASS-7392');
+                                                }} className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs shadow-lg">
+                                                    ⚡ Simulate Auto-Scan Pass
+                                                </button>
+                                                <button onClick={stopCamera} className="px-4 py-3 bg-slate-800 text-slate-300 font-bold rounded-xl text-xs">
+                                                    Close Camera
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* Verification Result Feedback */}
                             <AnimatePresence>
@@ -402,6 +487,60 @@ export default function ManagerEventsPage() {
                             </div>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* TAB: PAYMENTS APPROVAL */}
+            {activeTab === 'payments' && (
+                <div className="space-y-6">
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-2">
+                        <h2 className="text-xl font-black text-amber-400 flex items-center gap-2">
+                            <CreditCard className="w-5 h-5 text-amber-400" /> UPI Payment Verification & Ticket Release Queue
+                        </h2>
+                        <p className="text-xs text-slate-400">Review incoming customer UPI payment references. Once approved, the guest's ticket QR pass will be issued immediately.</p>
+                    </div>
+
+                    {pendingApprovalBookings.length === 0 ? (
+                        <div className="p-12 text-center bg-slate-900/60 border border-slate-800 rounded-3xl space-y-2">
+                            <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto opacity-70" />
+                            <h3 className="text-lg font-bold text-slate-300">All UPI Payments Verified</h3>
+                            <p className="text-xs text-slate-500">There are currently no pending event pass payment approvals.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {pendingApprovalBookings.map(p => (
+                                <div key={p.id} className="bg-slate-900 border border-purple-500/30 rounded-3xl p-6 space-y-4 shadow-xl">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <span className="px-2.5 py-1 bg-purple-500/20 text-purple-300 font-mono text-[10px] font-black rounded-full border border-purple-500/30">
+                                                {p.passCode}
+                                            </span>
+                                            <h3 className="text-lg font-black text-white mt-1">{p.customerName}</h3>
+                                            <p className="text-xs text-slate-400">Phone: {p.customerPhone}</p>
+                                        </div>
+                                        <span className="text-xl font-black text-amber-400">${p.totalPaid.toFixed(2)}</span>
+                                    </div>
+
+                                    <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-1 text-xs">
+                                        <p className="text-slate-400">Customer UPI ID / Ref: <strong className="text-purple-300 font-mono">{p.upiId || 'Not specified'}</strong></p>
+                                        <p className="text-slate-400">Passes Requested: <strong className="text-amber-400">{p.numberOfPasses} Guest Ticket(s)</strong> {p.tableNumber ? `(Table ${p.tableNumber})` : ''}</p>
+                                        <p className="text-slate-500 text-[10px]">Submitted: {p.bookedAt}</p>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button onClick={() => handleApprovePayment(p.passCode)}
+                                            className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1">
+                                            <CheckCircle2 className="w-4 h-4" /> Approve & Issue Pass
+                                        </button>
+                                        <button onClick={() => handleRejectPayment(p.passCode)}
+                                            className="px-4 py-3 bg-red-950/60 hover:bg-red-900/80 text-red-300 font-bold text-xs rounded-xl border border-red-800/40 transition-all">
+                                            Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -107,18 +107,29 @@ export default function CustomerMembershipPage() {
             <div className="px-4 py-6 space-y-6">
                 
                 {/* Upgrade Option */}
-                <div onClick={handleUpgrade}
-                    className={`bg-slate-900 rounded-2xl p-5 border ${isUpgrading ? 'border-amber-500 opacity-75' : 'border-slate-800 hover:border-amber-500 cursor-pointer'} flex items-center justify-between transition-colors group shadow-lg`}>
+                <div onClick={tier === 'DIAMOND' ? undefined : handleUpgrade}
+                    className={`bg-slate-900 rounded-2xl p-5 border ${
+                        tier === 'DIAMOND' ? 'border-indigo-500/50 cursor-default' :
+                        isUpgrading ? 'border-amber-500 opacity-75' : 'border-slate-800 hover:border-amber-500 cursor-pointer'
+                    } flex items-center justify-between transition-colors group shadow-lg`}>
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
                             {isUpgrading ? <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" /> : <Zap className="w-6 h-6" />}
                         </div>
                         <div>
-                            <h3 className="font-bold text-lg text-white">Upgrade Membership Tier</h3>
-                            <p className="text-sm text-slate-400">Unlock {nextTier} tier benefits & instant bonus points</p>
+                            <h3 className="font-bold text-lg text-white">
+                                {tier === 'DIAMOND' ? '👑 You are at TOP TIER!' : 'Upgrade Membership Tier'}
+                            </h3>
+                            <p className="text-sm text-slate-400">
+                                {tier === 'DIAMOND' ? 'Maximum VIP perks, priority kitchen routing & glowing badge active.' : `Unlock ${nextTier} tier benefits & instant bonus points`}
+                            </p>
                         </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                    {tier === 'DIAMOND' ? (
+                        <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 font-black text-xs rounded-full border border-indigo-500/40">TOP</span>
+                    ) : (
+                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                    )}
                 </div>
 
                 {/* Benefits List */}

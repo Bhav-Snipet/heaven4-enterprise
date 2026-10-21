@@ -11,8 +11,10 @@ export interface EventGuestRecord {
     passesCount: number;
     tableNumber: string;
     bookedAt: string;
-    status: 'CONFIRMED' | 'ATTENDED ✓' | 'CANCELLED';
+    status: 'PENDING_APPROVAL' | 'CONFIRMED' | 'ATTENDED ✓' | 'CANCELLED' | 'REJECTED';
     membershipTier?: string;
+    upiId?: string;
+    totalPaid?: number;
 }
 
 export const DEFAULT_GUEST_ROSTER: EventGuestRecord[] = [
@@ -27,7 +29,9 @@ export const DEFAULT_GUEST_ROSTER: EventGuestRecord[] = [
         tableNumber: 'RT-VIP-1',
         bookedAt: new Date(Date.now() - 3600000).toLocaleString(),
         status: 'CONFIRMED',
-        membershipTier: 'DIAMOND VIP'
+        membershipTier: 'DIAMOND VIP',
+        upiId: 'sarahcooper@okicici',
+        totalPaid: 90
     },
     {
         id: 'GST-901-2',
@@ -40,7 +44,9 @@ export const DEFAULT_GUEST_ROSTER: EventGuestRecord[] = [
         tableNumber: 'RT-1',
         bookedAt: new Date(Date.now() - 7200000).toLocaleString(),
         status: 'CONFIRMED',
-        membershipTier: 'GOLD VIP'
+        membershipTier: 'GOLD VIP',
+        upiId: 'marcus@upi',
+        totalPaid: 180
     },
     {
         id: 'GST-902-1',
@@ -53,7 +59,9 @@ export const DEFAULT_GUEST_ROSTER: EventGuestRecord[] = [
         tableNumber: 'BR-1',
         bookedAt: new Date(Date.now() - 14400000).toLocaleString(),
         status: 'CONFIRMED',
-        membershipTier: 'PLATINUM VIP'
+        membershipTier: 'PLATINUM VIP',
+        upiId: 'david.kim@okhdfcbank',
+        totalPaid: 0
     }
 ];
 
@@ -70,7 +78,7 @@ export function loadEventGuests(): EventGuestRecord[] {
     }
 }
 
-export function saveEventGuest(guest: Omit<EventGuestRecord, 'id' | 'bookedAt' | 'status'> & { id?: string; bookedAt?: string; status?: EventGuestRecord['status'] }): EventGuestRecord {
+export function saveEventGuest(guest: Omit<EventGuestRecord, 'id' | 'bookedAt' | 'status'> & { id?: string; bookedAt?: string; status?: EventGuestRecord['status']; upiId?: string; totalPaid?: number }): EventGuestRecord {
     const current = loadEventGuests();
     const newRecord: EventGuestRecord = {
         id: guest.id || `GST-${guest.eventId}-${Date.now().toString().slice(-4)}`,
@@ -83,7 +91,9 @@ export function saveEventGuest(guest: Omit<EventGuestRecord, 'id' | 'bookedAt' |
         tableNumber: guest.tableNumber || 'General Entry',
         bookedAt: guest.bookedAt || new Date().toLocaleString(),
         status: guest.status || 'CONFIRMED',
-        membershipTier: guest.membershipTier || 'GOLD VIP'
+        membershipTier: guest.membershipTier || 'GOLD VIP',
+        upiId: guest.upiId || '',
+        totalPaid: guest.totalPaid || 0
     };
 
     const updated = [newRecord, ...current];
@@ -103,3 +113,4 @@ export function getGuestsForEvent(eventId: number): EventGuestRecord[] {
     const all = loadEventGuests();
     return all.filter(g => g.eventId === eventId);
 }
+

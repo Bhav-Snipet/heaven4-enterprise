@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Clock, Flame, History, AlertTriangle, User, LogOut, TrendingUp, Crown, Sparkles, ChefHat, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, Clock, Flame, History, AlertTriangle, User, LogOut, TrendingUp, Crown, Sparkles, ChefHat, ChevronDown, ChevronUp, Package, ShoppingCart, CreditCard, GlassWater, Search } from 'lucide-react';
 import apiClient from '@/core/api/client';
 import { useOperationsWebSocket } from '@/core/hooks/useOperationsWebSocket';
 import { useAudioAlerts } from '@/core/contexts/AudioProvider';
@@ -14,6 +14,30 @@ interface LiveEvent {
     id: number; title: string; startDate: string; endDate: string;
     location: string; djName?: string; assignedChef: string;
     menuItems: EventMenuItem[];
+}
+
+interface RawMaterialItem {
+    id: number;
+    name: string;
+    category: 'Produce' | 'Meat & Seafood' | 'Dairy & Cheese' | 'Beverages & Spirits' | 'Dry Goods & Spices';
+    quantity: number;
+    unit: string;
+    minThreshold: number;
+    costPerUnit: number;
+    supplier: string;
+    lastRestocked: string;
+}
+
+interface RawMaterialOrder {
+    id: number;
+    materialName: string;
+    quantityOrdered: number;
+    unit: string;
+    totalCost: number;
+    supplier: string;
+    status: 'PENDING_APPROVAL' | 'PAID_APPROVED' | 'DELIVERED';
+    paymentMethod: string;
+    orderedAt: string;
 }
 
 // Developer toggle: set to false to hide the chef motivation widget
@@ -103,6 +127,103 @@ export default function KitchenDashboard() {
         { id: 2, name: 'Cook Sanjay K.', role: 'Sous Chef · Pizza Oven', pin: '5678', isOnDuty: true },
         { id: 3, name: 'Elena Rostova', role: 'Line Cook · Appetizers', pin: '9999', isOnDuty: false }
     ]);
+
+    // Kitchen Under Load State
+    const [isUnderLoad, setIsUnderLoad] = useState<boolean>(() => localStorage.getItem('heaven4_kitchen_under_load') === 'true');
+
+    // Order category filter state ('ALL' | 'KITCHEN_FOOD' | 'BAR_DRINKS' | 'EVENT')
+    const [kitchenCategoryFilter, setKitchenCategoryFilter] = useState<'ALL' | 'KITCHEN_FOOD' | 'BAR_DRINKS' | 'EVENT'>('ALL');
+
+    // Raw Materials & Inventory State
+    const [showRawModal, setShowRawModal] = useState(false);
+    const [rawSearch, setRawSearch] = useState('');
+    const [rawCategory, setRawCategory] = useState<string>('ALL');
+
+    const INITIAL_RAW_MATERIALS: RawMaterialItem[] = [
+        { id: 1, name: 'A5 Wagyu Beef Tenderloin', category: 'Meat & Seafood', quantity: 35, unit: 'kg', minThreshold: 10, costPerUnit: 45.00, supplier: 'Prime Meats Co.', lastRestocked: '2026-10-04' },
+        { id: 2, name: 'Black Truffle Oil & Paste', category: 'Produce', quantity: 8, unit: 'L', minThreshold: 10, costPerUnit: 120.00, supplier: 'Umbria Artisanal Import', lastRestocked: '2026-10-02' },
+        { id: 3, name: 'San Marzano Organic Tomatoes', category: 'Produce', quantity: 4, unit: 'kg', minThreshold: 15, costPerUnit: 4.00, supplier: 'Napoli Fresh Produce', lastRestocked: '2026-09-28' },
+        { id: 4, name: 'Sourdough Organic Wheat Flour', category: 'Dry Goods & Spices', quantity: 90, unit: 'kg', minThreshold: 25, costPerUnit: 2.50, supplier: 'Golden Valley Mills', lastRestocked: '2026-10-05' },
+        { id: 5, name: 'Imported Buffalo Burrata', category: 'Dairy & Cheese', quantity: 18, unit: 'kg', minThreshold: 8, costPerUnit: 18.00, supplier: 'Lazio Artisan Dairy', lastRestocked: '2026-10-05' },
+        { id: 6, name: 'Craft IPA Citrus Beer Kegs', category: 'Beverages & Spirits', quantity: 7, unit: 'Kegs', minThreshold: 3, costPerUnit: 110.00, supplier: 'Coastal Craft Brewery', lastRestocked: '2026-10-01' },
+        { id: 7, name: 'Reserve Cabernet Sauvignon 2019', category: 'Beverages & Spirits', quantity: 28, unit: 'Bottles', minThreshold: 10, costPerUnit: 25.00, supplier: 'Napa Estate Cellars', lastRestocked: '2026-10-03' },
+        { id: 8, name: 'Valrhona 70% Dark Chocolate', category: 'Dry Goods & Spices', quantity: 5, unit: 'kg', minThreshold: 8, costPerUnit: 22.00, supplier: 'French Pastry Supply', lastRestocked: '2026-10-02' }
+    ];
+
+    const [rawMaterials, setRawMaterials] = useState<RawMaterialItem[]>(() => {
+        try {
+            const saved = localStorage.getItem('heaven4_raw_materials_stock');
+            return saved ? JSON.parse(saved) : INITIAL_RAW_MATERIALS;
+        } catch { return INITIAL_RAW_MATERIALS; }
+    });
+
+    const [rawOrders, setRawOrders] = useState<RawMaterialOrder[]>(() => {
+        try {
+            const saved = localStorage.getItem('heaven4_raw_material_orders');
+            return saved ? JSON.parse(saved) : [
+                { id: 5001, materialName: 'Black Truffle Oil & Paste', quantityOrdered: 10, unit: 'L', totalCost: 1200.00, supplier: 'Umbria Artisanal Import', status: 'PENDING_APPROVAL', paymentMethod: 'UPI_QR', orderedAt: new Date().toISOString() },
+                { id: 5002, materialName: 'San Marzano Organic Tomatoes', quantityOrdered: 20, unit: 'kg', totalCost: 80.00, supplier: 'Napoli Fresh Produce', status: 'PAID_APPROVED', paymentMethod: 'BANK_WIRE', orderedAt: new Date(Date.now() - 86400000).toISOString() }
+            ];
+        } catch { return []; }
+    });
+
+    const toggleKitchenLoad = () => {
+        const next = !isUnderLoad;
+        setIsUnderLoad(next);
+        localStorage.setItem('heaven4_kitchen_under_load', next ? 'true' : 'false');
+        window.dispatchEvent(new Event('heaven4-load-status-changed'));
+        if (next) {
+            toast.error('🔥 KITCHEN UNDER LOAD ACTIVATED! High priority rush alert sent to all terminals.', { duration: 4000 });
+        } else {
+            toast.success('🟢 Kitchen pace set to NORMAL.', { duration: 3000 });
+        }
+    };
+
+    const handleCreateRawOrder = (item: RawMaterialItem, qty: number) => {
+        const orderId = Math.floor(5000 + Math.random() * 4000);
+        const newOrder: RawMaterialOrder = {
+            id: orderId,
+            materialName: item.name,
+            quantityOrdered: qty,
+            unit: item.unit,
+            totalCost: item.costPerUnit * qty,
+            supplier: item.supplier,
+            status: 'PENDING_APPROVAL',
+            paymentMethod: 'UPI_QR',
+            orderedAt: new Date().toISOString()
+        };
+        const updatedOrders = [newOrder, ...rawOrders];
+        setRawOrders(updatedOrders);
+        localStorage.setItem('heaven4_raw_material_orders', JSON.stringify(updatedOrders));
+        toast.success(`📦 Restock Order #${orderId} for ${qty} ${item.unit} of ${item.name} placed! Awaiting payment approval.`);
+    };
+
+    const handleApproveRawPayment = (orderId: number, method: string) => {
+        const updatedOrders = rawOrders.map(o => {
+            if (o.id === orderId) {
+                return { ...o, status: 'PAID_APPROVED' as const, paymentMethod: method };
+            }
+            return o;
+        });
+        setRawOrders(updatedOrders);
+        localStorage.setItem('heaven4_raw_material_orders', JSON.stringify(updatedOrders));
+
+        // Also increase quantity in stock
+        const targetOrder = rawOrders.find(o => o.id === orderId);
+        if (targetOrder) {
+            const dateToday = new Date().toISOString().split('T')[0] || '2026-10-06';
+            const updatedStock = rawMaterials.map(m => {
+                if (m.name === targetOrder.materialName) {
+                    return { ...m, quantity: m.quantity + targetOrder.quantityOrdered, lastRestocked: dateToday };
+                }
+                return m;
+            });
+            setRawMaterials(updatedStock);
+            localStorage.setItem('heaven4_raw_materials_stock', JSON.stringify(updatedStock));
+        }
+
+        toast.success(`💳 Payment Approved (${method}) for Order #${orderId}! Material stock updated.`);
+    };
 
     const handleToggleChefDuty = (e: React.FormEvent) => {
         e.preventDefault();
@@ -242,6 +363,7 @@ export default function KitchenDashboard() {
             await apiClient.put(`/orders/${orderId}/status`, { status }, { headers: { 'x-suppress-error-toast': 'true' } }).catch(() => null);
         } catch { /* seamless offline fallback */ }
 
+        const targetOrder = orders.find(o => o.id === orderId);
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: status as any } : o));
 
         try {
@@ -255,8 +377,29 @@ export default function KitchenDashboard() {
             }
         } catch { /* proceed */ }
 
+        if (status === 'READY' && targetOrder) {
+            const readyNotice = {
+                orderId,
+                tableNumber: targetOrder.tableNumber || 'T-01',
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('heaven4_last_ready_order_notice', JSON.stringify(readyNotice));
+            window.dispatchEvent(new CustomEvent('heaven4-order-ready', { detail: readyNotice }));
+            toast.success(`🔔 Order #${orderId} marked READY! Notification sent to Floor Waiters.`, { icon: '🔔' });
+        } else {
+            toast.success(`🍳 Order #${orderId} status set to ${status}!`);
+        }
+
         window.dispatchEvent(new Event('heaven4-tables-updated'));
-        toast.success(`🍳 Order #${orderId} status set to ${status}!`);
+    };
+
+    const isDrinkItemName = (name: string) => {
+        const lower = (name || '').toLowerCase();
+        return lower.includes('drink') || lower.includes('cocktail') || lower.includes('wine') ||
+               lower.includes('beer') || lower.includes('whiskey') || lower.includes('mojito') ||
+               lower.includes('tea') || lower.includes('coffee') || lower.includes('mocktail') ||
+               lower.includes('tonic') || lower.includes('gin') || lower.includes('negroni') ||
+               lower.includes('martini') || lower.includes('champagne') || lower.includes('ipa') || lower.includes('beverage') || lower.includes('bourbon') || lower.includes('sauvignon');
     };
 
     const getTierWeight = (tier?: string) => {
@@ -266,18 +409,38 @@ export default function KitchenDashboard() {
         return 0; // BRONZE or undefined
     };
 
-    const pendingOrders = orders
-        .filter(o => o.status === 'PENDING')
-        .sort((a, b) => getTierWeight(b.membershipTier) - getTierWeight(a.membershipTier) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const filterOrdersByCategory = (list: OrderDto[]) => {
+        return list.filter(order => {
+            const hasDrink = order.items.some(i => isDrinkItemName(i.menuItemName));
+            const hasFood = order.items.some(i => !isDrinkItemName(i.menuItemName));
+            const isEvent = eventMenuMode || order.items.some(i => i.menuItemName.toLowerCase().includes('event') || i.menuItemName.toLowerCase().includes('bruschetta'));
+
+            if (kitchenCategoryFilter === 'BAR_DRINKS') return hasDrink;
+            if (kitchenCategoryFilter === 'KITCHEN_FOOD') return hasFood;
+            if (kitchenCategoryFilter === 'EVENT') return isEvent;
+            return true;
+        });
+    };
+
+    const pendingOrders = filterOrdersByCategory(
+        orders
+            .filter(o => o.status === 'PENDING')
+            .sort((a, b) => getTierWeight(b.membershipTier) - getTierWeight(a.membershipTier) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    );
     
-    const preparingOrders = orders
-        .filter(o => o.status === 'PREPARING')
-        .sort((a, b) => getTierWeight(b.membershipTier) - getTierWeight(a.membershipTier) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const preparingOrders = filterOrdersByCategory(
+        orders
+            .filter(o => o.status === 'PREPARING')
+            .sort((a, b) => getTierWeight(b.membershipTier) - getTierWeight(a.membershipTier) || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    );
     
-    const readyOrders = orders.filter(o => o.status === 'READY');
+    const readyOrders = filterOrdersByCategory(orders.filter(o => o.status === 'READY'));
 
     const renderOrderCard = (order: OrderDto, nextStatus: string | null) => {
         const orderComplaint = complaints.find(c => c.orderId === order.id && c.status !== 'RESOLVED');
+        const hasDrink = order.items.some(i => isDrinkItemName(i.menuItemName));
+        const isEventOrder = order.items.some(i => i.menuItemName.toLowerCase().includes('event') || i.menuItemName.toLowerCase().includes('bruschetta'));
+
         return (
         <motion.div 
             layout 
@@ -286,11 +449,26 @@ export default function KitchenDashboard() {
             exit={{ opacity: 0, scale: 0.9 }}
             key={order.id}
             className={`bg-slate-800/80 backdrop-blur-md rounded-xl p-5 shadow-lg border transition-all ${
-                orderComplaint ? 'border-red-500 shadow-red-500/20' : 'border-white/5 hover:border-white/20'
+                orderComplaint ? 'border-red-500 shadow-red-500/20' :
+                hasDrink && kitchenCategoryFilter === 'BAR_DRINKS' ? 'border-indigo-500 shadow-indigo-500/30 bg-slate-900' :
+                isEventOrder ? 'border-amber-500/50 shadow-amber-500/20' :
+                'border-white/5 hover:border-white/20'
             }`}
         >
             <div className="flex justify-between items-start mb-3 border-b border-white/10 pb-3">
                 <div>
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                        {hasDrink && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                                🍹 BAR & DRINKS ORDER
+                            </span>
+                        )}
+                        {isEventOrder && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                                🎭 EVENT SPECIAL
+                            </span>
+                        )}
+                    </div>
                     <h3 className="font-bold text-lg text-white flex items-center gap-2">
                         Order #{order.id}
                         {orderComplaint && (
@@ -317,12 +495,18 @@ export default function KitchenDashboard() {
             </div>
             
             <ul className="space-y-2 mb-4">
-                {order.items.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-sm">
-                        <span className="font-bold text-orange-400">{item.quantity}×</span>
-                        <span className="text-slate-200">{item.menuItemName}</span>
-                    </li>
-                ))}
+                {order.items.map((item, i) => {
+                    const isDrink = isDrinkItemName(item.menuItemName);
+                    return (
+                        <li key={i} className={`flex gap-2 text-sm p-1 rounded-lg ${isDrink ? 'bg-indigo-950/40 border border-indigo-500/20' : ''}`}>
+                            <span className="font-bold text-orange-400">{item.quantity}×</span>
+                            <span className={`text-slate-200 flex items-center gap-1 ${isDrink ? 'text-indigo-200 font-bold' : ''}`}>
+                                {isDrink && <GlassWater className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+                                {item.menuItemName}
+                            </span>
+                        </li>
+                    );
+                })}
             </ul>
 
             {nextStatus ? (
@@ -357,25 +541,60 @@ export default function KitchenDashboard() {
                             <p className="text-slate-400 text-sm">Live Order Tracking & Execution</p>
                         </div>
                     </div>
-                    {/* Chef Identity & Shift — right side */}
-                    <div className="flex items-center gap-3">
-                        <div className="bg-slate-900/60 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                                <User className="w-5 h-5 text-orange-400" />
+                    {/* Chef Identity, Load Toggle & Raw Materials — right side */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                        {/* 📦 Raw Materials & Stock Button */}
+                        <button
+                            onClick={() => setShowRawModal(true)}
+                            className="bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 rounded-2xl px-3.5 py-2.5 flex items-center gap-2 text-xs font-black shadow-lg transition-all"
+                        >
+                            <Package className="w-4 h-4 text-indigo-400" />
+                            Raw Materials Stock
+                        </button>
+
+                        {/* 🔥 Kitchen Under Load Button */}
+                        <button
+                            onClick={toggleKitchenLoad}
+                            className={`rounded-2xl px-4 py-2.5 flex items-center gap-2 text-xs font-black transition-all shadow-lg border ${
+                                isUnderLoad
+                                    ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white border-red-400 animate-pulse shadow-red-600/40'
+                                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                            }`}
+                        >
+                            <Flame className={`w-4 h-4 ${isUnderLoad ? 'text-yellow-300 animate-bounce' : 'text-orange-400'}`} />
+                            {isUnderLoad ? '🔥 UNDER LOAD (ACTIVE)' : '🔥 Kitchen Under Load'}
+                        </button>
+
+                        <div className="bg-slate-900/60 border border-white/10 rounded-2xl px-4 py-2.5 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                                <User className="w-4 h-4 text-orange-400" />
                             </div>
                             <div>
-                                <p className="font-bold text-sm text-white">{user?.displayName || 'Chef'}</p>
-                                <p className="text-xs text-slate-400">Shift: {shiftElapsed}</p>
+                                <p className="font-bold text-xs text-white">{user?.displayName || 'Chef'}</p>
+                                <p className="text-[10px] text-slate-400">Shift: {shiftElapsed}</p>
                             </div>
                         </div>
                         <button
                             onClick={() => { localStorage.clear(); window.location.href = '/'; }}
-                            className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl px-3 py-2 flex items-center gap-2 text-sm font-bold transition-all"
+                            className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl px-3 py-2 flex items-center gap-1.5 text-xs font-bold transition-all"
                         >
-                            <LogOut className="w-4 h-4" /> Sign Out
+                            <LogOut className="w-3.5 h-3.5" /> Sign Out
                         </button>
                     </div>
                 </div>
+
+                {/* High Load Warning Banner */}
+                {isUnderLoad && (
+                    <div className="mt-3 p-3.5 bg-gradient-to-r from-red-950/80 via-orange-950/80 to-amber-950/80 border border-red-500/40 rounded-2xl flex items-center justify-between text-xs text-red-200 animate-pulse">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+                            <span className="font-black">🔥 HIGH RUSH LOAD ACTIVE — Fast-track express & simple orders. Floor staff notified.</span>
+                        </div>
+                        <button onClick={toggleKitchenLoad} className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-amber-300 font-bold rounded-lg border border-amber-500/30 text-[10px]">
+                            Deactivate
+                        </button>
+                    </div>
+                )}
 
                 {/* ── Live Event Banner ── */}
                 {liveEvent && (
@@ -416,22 +635,23 @@ export default function KitchenDashboard() {
                         </div>
 
                         <AnimatePresence>
-                            {showEventMenu && (
+                            {showEventMenu && liveEvent && (
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                                     className="overflow-hidden bg-slate-950 border-t border-amber-500/20">
                                     <div className="p-4 space-y-2">
-                                        <p className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">Tonight's Event Menu — {liveEvent.menuItems.length} Items</p>
+                                        <p className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">Tonight's Event Menu — {(liveEvent.menuItems || []).length} Items</p>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                                            {liveEvent.menuItems.map((item, idx) => {
-                                                const badge = getDietaryBadge(item.dietaryType || 'VEG');
+                                            {(liveEvent.menuItems || []).map((item, idx) => {
+                                                const badge = getDietaryBadge(item?.dietaryType || 'VEG') || { badge: 'bg-emerald-500/20 text-emerald-300', icon: '🟢', label: 'VEG' };
+                                                const priceNum = typeof item?.price === 'number' ? item.price : 0;
                                                 return (
                                                     <div key={idx} className="flex items-center gap-2.5 p-2.5 bg-slate-900 rounded-xl border border-slate-800 text-xs">
-                                                        {item.imageUrl && <img src={item.imageUrl} alt={item.name} className="w-10 h-10 rounded-lg object-cover bg-slate-950 shrink-0" />}
+                                                        {item?.imageUrl && <img src={item.imageUrl} alt={item?.name || 'Event Item'} className="w-10 h-10 rounded-lg object-cover bg-slate-950 shrink-0" />}
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="font-bold text-white truncate">{item.name}</p>
+                                                            <p className="font-bold text-white truncate">{item?.name || 'Event Dish'}</p>
                                                             <span className={`px-1.5 py-0.5 text-[9px] rounded font-bold ${badge.badge}`}>{badge.icon} {badge.label}</span>
                                                         </div>
-                                                        <span className="font-black text-emerald-400 shrink-0 ml-2">${item.price.toFixed(2)}</span>
+                                                        <span className="font-black text-emerald-400 shrink-0 ml-2">${priceNum.toFixed(2)}</span>
                                                     </div>
                                                 );
                                             })}
@@ -525,17 +745,43 @@ export default function KitchenDashboard() {
                 })()}
             </header>
 
-            {/* Tabs */}
-            <div className="flex gap-2 mb-6 relative z-10">
-                {(['live', 'history', 'complaints'] as Tab[]).map(t => (
-                    <button key={t} onClick={() => setTab(t)}
-                        className={`px-5 py-2 rounded-xl font-bold text-sm capitalize transition-all ${tab === t ? 'bg-white text-slate-900' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>
-                        {t === 'complaints' && complaints.filter(c => c.status !== 'RESOLVED').length > 0 && (
-                            <span className="mr-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{complaints.filter(c => c.status !== 'RESOLVED').length}</span>
-                        )}
-                        {t}
-                    </button>
-                ))}
+            {/* Tabs & Order Showcase Filters */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 relative z-10">
+                <div className="flex gap-2">
+                    {(['live', 'history', 'complaints'] as Tab[]).map(t => (
+                        <button key={t} onClick={() => setTab(t)}
+                            className={`px-5 py-2 rounded-xl font-bold text-sm capitalize transition-all ${tab === t ? 'bg-white text-slate-900 shadow-md' : 'bg-white/5 text-slate-400 hover:bg-white/10'}`}>
+                            {t === 'complaints' && complaints.filter(c => c.status !== 'RESOLVED').length > 0 && (
+                                <span className="mr-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{complaints.filter(c => c.status !== 'RESOLVED').length}</span>
+                            )}
+                            {t}
+                        </button>
+                    ))}
+                </div>
+
+                {tab === 'live' && (
+                    <div className="flex items-center gap-1.5 bg-slate-900/80 p-1.5 border border-slate-800 rounded-2xl overflow-x-auto text-xs">
+                        <span className="text-[11px] font-bold text-slate-400 px-2 shrink-0">Filter Showcase:</span>
+                        {[
+                            { key: 'ALL', label: 'All Orders' },
+                            { key: 'KITCHEN_FOOD', label: '🍳 Kitchen Food' },
+                            { key: 'BAR_DRINKS', label: '🍹 Bar & Drinks' },
+                            { key: 'EVENT', label: '🎭 Event Specials' }
+                        ].map(f => (
+                            <button
+                                key={f.key}
+                                onClick={() => setKitchenCategoryFilter(f.key as any)}
+                                className={`px-3 py-1.5 rounded-xl font-black transition-all shrink-0 ${
+                                    kitchenCategoryFilter === f.key
+                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                }`}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Live Orders — no overflow-hidden so all cards are visible */}
@@ -717,6 +963,152 @@ export default function KitchenDashboard() {
                                     {chefs[activeChefIndex]?.isOnDuty ? '🔴 Confirm Go OFF-DUTY' : '🟢 Confirm Go ON-DUTY'}
                                 </button>
                             </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* 📦 RAW MATERIALS STOCK & SUPPLIER PAYMENT APPROVAL MODAL */}
+            <AnimatePresence>
+                {showRawModal && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                        onClick={() => setShowRawModal(false)}>
+                        <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+                            className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl text-white"
+                            onClick={e => e.stopPropagation()}>
+                            
+                            <div className="flex justify-between items-start border-b border-slate-800 pb-4">
+                                <div>
+                                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-1">
+                                        <Package className="w-3.5 h-3.5" /> Kitchen Inventory & Supplier Management
+                                    </span>
+                                    <h3 className="text-2xl font-black text-white">Raw Materials Stock & Payment Approvals</h3>
+                                    <p className="text-xs text-slate-400">Order ingredients, track inventory levels, and process supplier payments.</p>
+                                </div>
+                                <button onClick={() => setShowRawModal(false)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400">✕</button>
+                            </div>
+
+                            {/* Search & Filter Bar */}
+                            <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-slate-950 p-3 rounded-2xl border border-slate-800">
+                                <div className="relative w-full sm:w-72">
+                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search ingredients, meat, wine..."
+                                        value={rawSearch}
+                                        onChange={e => setRawSearch(e.target.value)}
+                                        className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2 overflow-x-auto text-xs w-full sm:w-auto">
+                                    {['ALL', 'Meat & Seafood', 'Produce', 'Dairy & Cheese', 'Beverages & Spirits', 'Dry Goods & Spices'].map(cat => (
+                                        <button
+                                            key={cat}
+                                            onClick={() => setRawCategory(cat)}
+                                            className={`px-3 py-1.5 rounded-xl font-bold shrink-0 transition-all ${
+                                                rawCategory === cat ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+                                            }`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 💳 Pending Restock Payment Approvals */}
+                            {rawOrders.filter(o => o.status === 'PENDING_APPROVAL').length > 0 && (
+                                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                            <CreditCard className="w-4 h-4 text-amber-400 animate-pulse" />
+                                            Pending Restock Supplier Payments ({rawOrders.filter(o => o.status === 'PENDING_APPROVAL').length})
+                                        </span>
+                                        <span className="text-[10px] font-bold text-amber-300">Requires Payment Approval</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {rawOrders.filter(o => o.status === 'PENDING_APPROVAL').map(order => (
+                                            <div key={order.id} className="p-3 bg-slate-950 rounded-xl border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                                <div>
+                                                    <p className="font-bold text-white">Order #{order.id} · {order.materialName}</p>
+                                                    <p className="text-[11px] text-slate-400">Qty: {order.quantityOrdered} {order.unit} · Supplier: {order.supplier}</p>
+                                                </div>
+                                                <div className="flex items-center gap-3 shrink-0">
+                                                    <span className="font-black text-emerald-400 text-sm">${order.totalCost.toFixed(2)}</span>
+                                                    <div className="flex items-center gap-1">
+                                                        {['UPI_QR', 'BANK_WIRE', 'CASH'].map(m => (
+                                                            <button
+                                                                key={m}
+                                                                onClick={() => handleApproveRawPayment(order.id, m)}
+                                                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black text-[10px] rounded-lg shadow-md transition-all"
+                                                            >
+                                                                Approve ({m})
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Raw Materials Inventory Grid */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Raw Material Stock Levels</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {rawMaterials
+                                        .filter(m => {
+                                            const matchCat = rawCategory === 'ALL' || m.category === rawCategory;
+                                            const matchSearch = !rawSearch || m.name.toLowerCase().includes(rawSearch.toLowerCase());
+                                            return matchCat && matchSearch;
+                                        })
+                                        .map(item => {
+                                            const isLow = item.quantity <= item.minThreshold && item.quantity > 0;
+                                            const isOut = item.quantity === 0;
+                                            return (
+                                                <div key={item.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3 text-xs">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <span className="text-[10px] text-indigo-400 font-bold uppercase">{item.category}</span>
+                                                            <h5 className="font-bold text-white text-sm mt-0.5">{item.name}</h5>
+                                                            <p className="text-[10px] text-slate-500">Supplier: {item.supplier} · Est. ${item.costPerUnit}/{item.unit}</p>
+                                                        </div>
+                                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border ${
+                                                            isOut ? 'bg-red-500/20 text-red-300 border-red-500/30 animate-pulse' :
+                                                            isLow ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' :
+                                                            'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                                        }`}>
+                                                            {isOut ? '🔴 OUT OF STOCK' : isLow ? '🟡 LOW STOCK' : '🟢 IN STOCK'}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-[11px]">
+                                                            <span className="text-slate-400">Current Level</span>
+                                                            <span className="font-bold text-white">{item.quantity} / {item.minThreshold * 4} {item.unit}</span>
+                                                        </div>
+                                                        <div className="h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                                                            <div
+                                                                className={`h-full transition-all ${isOut ? 'bg-red-500' : isLow ? 'bg-amber-500' : 'bg-emerald-400'}`}
+                                                                style={{ width: `${Math.min(100, (item.quantity / (item.minThreshold * 4)) * 100)}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex justify-between items-center pt-2 border-t border-slate-900">
+                                                        <span className="text-[10px] text-slate-500">Last Restocked: {item.lastRestocked}</span>
+                                                        <button
+                                                            onClick={() => handleCreateRawOrder(item, item.minThreshold * 2)}
+                                                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] rounded-xl flex items-center gap-1 shadow-md transition-all"
+                                                        >
+                                                            <ShoppingCart className="w-3.5 h-3.5" /> Order Restock ({item.minThreshold * 2} {item.unit})
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                </div>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}

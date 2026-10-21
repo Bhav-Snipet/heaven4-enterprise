@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { preloadWorkspace } from '@/app/Router';
 
 export interface UserInfo {
     id: number;
@@ -35,6 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
                 const parsed = JSON.parse(storedUser) as UserInfo;
                 setUser(parsed);
+                // Preload user workspace dynamically
+                if (parsed.workspace) {
+                    preloadWorkspace(parsed.workspace);
+                }
                 // If the stored user IS a developer, ensure dev mode is true
                 if (parsed.role === 'DEVELOPER' || devMode) {
                     setIsDeveloperMode(true);

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { KeyRound, Loader2, ArrowRight, Lock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/core/auth/AuthProvider';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
-import { preloadAllWorkspaces } from '@/app/Router';
+import { preloadWorkspace } from '@/app/Router';
 
 /**
  * StaffLoginScreen — Separate, staff-only login page at /staff-login
@@ -17,10 +17,16 @@ export default function StaffLoginScreen() {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    // Trigger background preloading of workspace chunks as soon as Staff Login renders
-    useEffect(() => {
-        preloadAllWorkspaces();
-    }, []);
+    const handleIdentifierChange = (val: string) => {
+        setIdentifier(val);
+        const cleanId = val.trim().toLowerCase();
+        if (cleanId.includes('admin')) preloadWorkspace('ADMIN');
+        else if (cleanId.includes('owner')) preloadWorkspace('OWNER');
+        else if (cleanId.includes('mgr') || cleanId.includes('manager')) preloadWorkspace('MANAGER');
+        else if (cleanId.includes('kit') || cleanId.includes('chef')) preloadWorkspace('KITCHEN');
+        else if (cleanId.includes('dev')) preloadWorkspace('DEVELOPER');
+        else preloadWorkspace('EMPLOYEE');
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -152,7 +158,8 @@ export default function StaffLoginScreen() {
                                     type="text"
                                     placeholder="e.g. emp001, mgr001"
                                     value={identifier}
-                                    onChange={e => setIdentifier(e.target.value)}
+                                    onChange={e => handleIdentifierChange(e.target.value)}
+                                    onFocus={() => preloadWorkspace('EMPLOYEE')}
                                     autoComplete="username"
                                     className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-slate-600 focus:border-white/30 focus:ring-0 outline-none transition-colors"
                                 />

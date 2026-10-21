@@ -26,6 +26,24 @@ public class Coupon {
     @Column(nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "min_order_amount")
+    private BigDecimal minOrderAmount;
+
+    @Column(name = "max_discount_amount")
+    private BigDecimal maxDiscountAmount;
+
+    @Column(name = "usage_limit_per_customer")
+    private Integer usageLimitPerCustomer = 1;
+
+    @Column(name = "total_usage_limit")
+    private Integer totalUsageLimit;
+
+    @Column(name = "valid_until")
+    private LocalDateTime validUntil;
+
+    @Column(name = "description")
+    private String description;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

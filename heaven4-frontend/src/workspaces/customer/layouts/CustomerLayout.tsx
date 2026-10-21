@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
-import { Home, Award, ShoppingBag, LogOut, User, MessageSquare, Crown, Bell, Sparkles } from 'lucide-react';
+import { Home, Award, ShoppingBag, LogOut, User, Crown, Bell, Sparkles, Clock, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthProvider';
 import { useCart } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,12 +54,13 @@ export default function CustomerLayout() {
 
   const navItems = [
     { to: '/customer/menu', icon: Home, label: 'Menu', end: true },
+    { to: '/customer/order-status', icon: Clock, label: 'Track Order' },
     { to: '/customer/events', icon: Sparkles, label: 'Events' },
     { to: '/customer/membership', icon: Crown, label: 'VIP' },
     { to: '/customer/rewards', icon: Award, label: 'Rewards' },
     { to: '/customer/cart', icon: ShoppingBag, label: 'Cart', badge: items.length > 0 ? items.length : null },
     { to: '/customer/profile', icon: User, label: 'Profile' },
-    { to: '/customer/complaint', icon: MessageSquare, label: 'Help' },
+    { to: '/customer/complaint', icon: AlertTriangle, label: 'Complaints' },
   ];
 
   return (
@@ -76,17 +77,25 @@ export default function CustomerLayout() {
             </h1>
           </Link>
           
-          <div className="flex items-center gap-4">
-            <Link to="/customer/membership" className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 hover:bg-white/10 transition-colors cursor-pointer">
-              <Crown className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm font-medium text-slate-300">VIP</span>
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <Link to="/customer/order-status" className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-sm">
+              <Clock className="w-3.5 h-3.5 text-blue-400" />
+              <span>Track Order</span>
             </Link>
-            <Link to="/customer/profile" className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 hover:bg-white/10 transition-colors cursor-pointer">
-              <User className="w-4 h-4 text-heaven-400" />
-              <span className="text-sm font-medium text-slate-300">{user?.displayName || 'Guest'}</span>
+            <Link to="/customer/complaint" className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-sm">
+              <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+              <span>Raise Complaint</span>
             </Link>
-            <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors">
-              <LogOut className="w-5 h-5" />
+            <Link to="/customer/membership" className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors cursor-pointer text-xs font-medium text-slate-300">
+              <Crown className="w-3.5 h-3.5 text-yellow-400" />
+              <span>VIP</span>
+            </Link>
+            <Link to="/customer/profile" className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors cursor-pointer text-xs font-medium text-slate-300">
+              <User className="w-3.5 h-3.5 text-heaven-400" />
+              <span>{user?.displayName || 'Guest'}</span>
+            </Link>
+            <button onClick={handleLogout} className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors" title="Sign out">
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/owner/coupons")
+@RequestMapping({"/api/v1/owner/coupons", "/api/v1/coupons"})
 @RequiredArgsConstructor
 public class CouponController {
 
@@ -37,6 +37,12 @@ public class CouponController {
         coupon.setCode(couponDetails.getCode());
         coupon.setDiscountPercentage(couponDetails.getDiscountPercentage());
         coupon.setIsActive(couponDetails.getIsActive());
+        coupon.setMinOrderAmount(couponDetails.getMinOrderAmount());
+        coupon.setMaxDiscountAmount(couponDetails.getMaxDiscountAmount());
+        coupon.setUsageLimitPerCustomer(couponDetails.getUsageLimitPerCustomer());
+        coupon.setTotalUsageLimit(couponDetails.getTotalUsageLimit());
+        coupon.setValidUntil(couponDetails.getValidUntil());
+        coupon.setDescription(couponDetails.getDescription());
         
         return ResponseEntity.ok(couponRepository.save(coupon));
     }
@@ -51,8 +57,8 @@ public class CouponController {
     @GetMapping("/validate/{code}")
     public ResponseEntity<Coupon> validateCoupon(@PathVariable String code) {
         return couponRepository.findByCode(code)
-                .filter(Coupon::getIsActive)
+                .filter(c -> Boolean.TRUE.equals(c.getIsActive()))
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new RuntimeException("Invalid or inactive coupon"));
+                .orElse(ResponseEntity.notFound().build());
     }
 }

@@ -24,38 +24,58 @@ const AdminRouter = lazy(() => import('@/workspaces/admin/AdminRouter'));
 const OwnerRouter = lazy(() => import('@/workspaces/owner/OwnerRouter'));
 const DeveloperPortal = lazy(() => import('@/workspaces/auth/DeveloperPortal'));
 
-// Background preloader function: triggers downloading ALL workspace JS chunks in background while user is on Login page
-export function preloadAllWorkspaces() {
-  if (typeof window !== 'undefined') {
-    const trigger = () => {
-      // Fetch layout and router chunks concurrently in background
-      Promise.all([
-        import('@/workspaces/customer/layouts/CustomerLayout'),
-        import('@/workspaces/customer/CustomerRouter'),
-        import('@/workspaces/employee/layouts/EmployeeLayout'),
-        import('@/workspaces/employee/EmployeeRouter'),
-        import('@/workspaces/kitchen/layouts/KitchenLayout'),
-        import('@/workspaces/kitchen/KitchenRouter'),
-        import('@/workspaces/manager/layouts/ManagerLayout'),
-        import('@/workspaces/manager/ManagerRouter'),
-        import('@/workspaces/admin/layouts/AdminLayout'),
-        import('@/workspaces/admin/AdminRouter'),
-        import('@/workspaces/owner/layouts/OwnerLayout'),
-        import('@/workspaces/owner/OwnerRouter'),
-        import('@/workspaces/auth/DeveloperPortal'),
-      ]).catch(() => {});
-    };
+// Per-workspace preloader map
+const workspacePreloaders: Record<string, () => Promise<any>> = {
+  CUSTOMER: () => Promise.all([
+    import('@/workspaces/customer/layouts/CustomerLayout'),
+    import('@/workspaces/customer/CustomerRouter'),
+  ]),
+  EMPLOYEE: () => Promise.all([
+    import('@/workspaces/employee/layouts/EmployeeLayout'),
+    import('@/workspaces/employee/EmployeeRouter'),
+  ]),
+  KITCHEN: () => Promise.all([
+    import('@/workspaces/kitchen/layouts/KitchenLayout'),
+    import('@/workspaces/kitchen/KitchenRouter'),
+  ]),
+  MANAGER: () => Promise.all([
+    import('@/workspaces/manager/layouts/ManagerLayout'),
+    import('@/workspaces/manager/ManagerRouter'),
+  ]),
+  ADMIN: () => Promise.all([
+    import('@/workspaces/admin/layouts/AdminLayout'),
+    import('@/workspaces/admin/AdminRouter'),
+  ]),
+  OWNER: () => Promise.all([
+    import('@/workspaces/owner/layouts/OwnerLayout'),
+    import('@/workspaces/owner/OwnerRouter'),
+  ]),
+  DEVELOPER: () => import('@/workspaces/auth/DeveloperPortal'),
+};
 
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(trigger, { timeout: 1000 });
-    } else {
-      setTimeout(trigger, 50);
-    }
+/** Preload a specific workspace JS bundle (e.g. on user input or login button hover) */
+export function preloadWorkspace(workspace: string) {
+  if (typeof window === 'undefined' || !workspace) return;
+  const key = workspace.toUpperCase();
+  if (workspacePreloaders[key]) {
+    workspacePreloaders[key]().catch(() => {});
   }
 }
 
-// Automatically initiate preloading as soon as Router module evaluates
-preloadAllWorkspaces();
+/** Preload all workspace bundles lazily when idle */
+export function preloadAllWorkspaces() {
+  if (typeof window !== 'undefined') {
+    const trigger = () => {
+      Object.values(workspacePreloaders).forEach(fn => fn().catch(() => {}));
+    };
+
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(trigger, { timeout: 2000 });
+    } else {
+      setTimeout(trigger, 200);
+    }
+  }
+}
 
 
 // Lightweight fallback loader for Suspense

@@ -217,6 +217,43 @@ export default function OwnerOrdersPage() {
                                 <span>Total</span>
                                 <span className="text-gold-400">${(selectedOrder.totalAmount || 0).toFixed(2)}</span>
                             </div>
+
+                            {/* Payment Method & Proof Photo evidence display */}
+                            {(() => {
+                                const settledRaw = localStorage.getItem('heaven4_settled_orders');
+                                const settledList = settledRaw ? JSON.parse(settledRaw) : [];
+                                const match = settledList.find((s: any) => s.orderId === selectedOrder.id || s.tableNumber === selectedOrder.tableNumber);
+                                const photo = match?.paymentPhoto || (selectedOrder as any).paymentPhoto;
+                                const method = match?.paymentMethod || (selectedOrder as any).paymentMethod || 'UPI_QR / CASH';
+
+                                return (
+                                    <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 space-y-2 text-xs mt-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-slate-400 font-bold">Payment Settlement Method</span>
+                                            <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 font-black rounded-lg border border-emerald-500/30">
+                                                💳 {method}
+                                            </span>
+                                        </div>
+
+                                        {photo ? (
+                                            <div className="pt-2 border-t border-slate-900 space-y-2">
+                                                <p className="font-bold text-amber-400 flex items-center gap-1">
+                                                    📸 Payment Photo Evidence Attached by Staff:
+                                                </p>
+                                                <div className="rounded-xl overflow-hidden border border-slate-700 bg-black max-h-48 flex justify-center">
+                                                    <img src={photo} alt="Payment Proof" className="max-h-48 object-contain" />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="pt-2 border-t border-slate-900 flex justify-between items-center text-slate-500 text-[11px]">
+                                                <span>Payment Photo Evidence</span>
+                                                <span className="italic">No photo evidence attached for this order</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
                             <div className="flex justify-center mt-4">
                                 <span className={`px-4 py-1.5 rounded-full text-sm font-bold ${
                                     selectedOrder.status === 'COMPLETED' ? 'bg-green-500/20 text-green-400' :

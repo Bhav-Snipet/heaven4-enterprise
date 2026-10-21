@@ -43,6 +43,11 @@ public class AdminController {
             userMap.put("displayName", (user.getFirstName() != null ? user.getFirstName() : "") + " " + (user.getLastName() != null ? user.getLastName() : ""));
             userMap.put("roles", roles.stream().map(r -> Map.of("id", r.getId(), "role", r.getRole(), "workspace", r.getWorkspace())).toList());
             userMap.put("lastLoginAt", user.getLastLoginAt());
+            userMap.put("createdAt", user.getCreatedAt());
+            userMap.put("isBlocked", user.getIsBlocked() != null && user.getIsBlocked());
+            // Include membership tier for customers
+            com.heaven4.domain.billing.RewardsProfile profile = rewardsProfileRepository.findByUserId(user.getId()).orElse(null);
+            userMap.put("membershipTier", profile != null ? profile.getTier() : "BRONZE");
             result.add(userMap);
         }
         return ResponseEntity.ok(result);

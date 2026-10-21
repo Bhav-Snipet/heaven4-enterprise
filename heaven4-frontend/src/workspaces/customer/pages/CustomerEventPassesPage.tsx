@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Ticket, MapPin, ShieldCheck, Calendar, Clock, Bell, ArrowLeft, X, Music } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '@/core/api/client';
 import { getCountdownBanner, getPassStatusStyle, formatEventDate, formatEventTime } from '@/shared/utils/eventHelpers';
+import { loadEventGuests, EventGuestRecord } from '@/shared/utils/eventGuestHelpers';
 
 interface EventPass {
     id: number;
@@ -14,7 +14,8 @@ interface EventPass {
     numberOfPasses: number;
     tableNumber?: string;
     totalPaid: number;
-    status: 'BOOKED' | 'ATTENDED' | 'CANCELLED';
+    upiId?: string;
+    status: 'PENDING_APPROVAL' | 'BOOKED' | 'ATTENDED' | 'CANCELLED' | 'REJECTED';
     bookedAt: string;
     event: {
         title: string;
@@ -36,6 +37,7 @@ const DEMO_PASSES: EventPass[] = [
         numberOfPasses: 2,
         tableNumber: 'VIP-1',
         totalPaid: 90.00,
+        upiId: 'sarah@okicici',
         status: 'BOOKED',
         bookedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
         event: {
@@ -48,25 +50,6 @@ const DEMO_PASSES: EventPass[] = [
             imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800',
         }
     },
-    {
-        id: 502,
-        passCode: 'EVT-PASS-5K92',
-        customerName: 'Sarah Jenkins',
-        customerPhone: '9876543210',
-        numberOfPasses: 1,
-        totalPaid: 120.00,
-        status: 'BOOKED',
-        bookedAt: new Date(Date.now() - 86400000).toISOString(),
-        event: {
-            title: '🎉 New Year\'s Eve Grand Countdown',
-            location: 'Main Dining Hall + Rooftop Terrace',
-            address: 'Heaven4 Building, All Floors',
-            startDate: new Date('2026-12-31T21:00:00').toISOString(),
-            endDate: new Date('2027-01-01T02:00:00').toISOString(),
-            djName: 'DJ MixMaster Pro',
-            imageUrl: 'https://images.unsplash.com/photo-1467810563316-b5476525c0f9?w=800',
-        }
-    },
 ];
 
 export default function CustomerEventPassesPage() {
@@ -75,19 +58,46 @@ export default function CustomerEventPassesPage() {
     const [loading, setLoading] = useState(false);
     const [expandedQr, setExpandedQr] = useState<string | null>(null);
 
+    const loadAndSyncPasses = () => {
+        try {
+            const guestRecords = loadEventGuests();
+            if (guestRecords && guestRecords.length > 0) {
+                const mapped: EventPass[] = guestRecords.map((g: EventGuestRecord, idx: number) => ({
+                    id: 600 + idx,
+                    passCode: g.passCode,
+                    customerName: g.guestName,
+                    customerPhone: g.guestPhone,
+                    numberOfPasses: g.passesCount,
+                    tableNumber: g.tableNumber,
+                    totalPaid: g.totalPaid || 0,
+                    upiId: g.upiId,
+                    status: g.status === 'PENDING_APPROVAL' ? 'PENDING_APPROVAL' :
+                            g.status === 'ATTENDED ✓' ? 'ATTENDED' :
+                            g.status === 'CANCELLED' ? 'CANCELLED' :
+                            g.status === 'REJECTED' ? 'REJECTED' : 'BOOKED',
+                    bookedAt: g.bookedAt,
+                    event: {
+                        title: g.eventTitle,
+                        location: 'Rooftop Sunset Lounge',
+                        address: 'Heaven4 Rooftop, 4th Floor',
+                        startDate: new Date().toISOString(),
+                        endDate: new Date(Date.now() + 7200000).toISOString(),
+                        djName: 'DJ Live Ensemble',
+                        imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800'
+                    }
+                }));
+                setPasses(mapped);
+            }
+        } catch { /* use default */ }
+    };
+
     useEffect(() => {
-        const fetchPasses = async () => {
-            setLoading(true);
-            try {
-                const res = await apiClient.get('/events/passes/my-passes').catch(() => null);
-                if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-                    setPasses(res.data);
-                } else {
-                    setPasses(DEMO_PASSES);
-                }
-            } catch { setPasses(DEMO_PASSES); } finally { setLoading(false); }
-        };
-        fetchPasses();
+        setLoading(true);
+        loadAndSyncPasses();
+        setLoading(false);
+        const handleGuestsUpdated = () => loadAndSyncPasses();
+        window.addEventListener('heaven4-guests-updated', handleGuestsUpdated);
+        return () => window.removeEventListener('heaven4-guests-updated', handleGuestsUpdated);
     }, []);
 
     // Compute countdown banners for each pass

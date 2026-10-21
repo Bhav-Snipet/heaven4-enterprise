@@ -85,6 +85,7 @@ export default function CustomerEventsPage() {
     const [tableNumber, setTableNumber] = useState('');
     const [guestName, setGuestName] = useState(user?.displayName || 'VIP Guest');
     const [guestPhone, setGuestPhone] = useState(user?.phoneNumber || '7020875435');
+    const [customerUpiId, setCustomerUpiId] = useState('');
     const [paymentConfirmed, setPaymentConfirmed] = useState(false);
     const [isBooking, setIsBooking] = useState(false);
 
@@ -151,6 +152,7 @@ export default function CustomerEventsPage() {
         setSelectedEvent(evt);
         setPasses(1);
         setTableNumber('');
+        setCustomerUpiId('');
         setPaymentConfirmed(false);
         setBookingModal(true);
     };
@@ -163,10 +165,22 @@ export default function CustomerEventsPage() {
             return;
         }
         if (passes > selectedEvent.availablePasses) { toast.error(`Only ${selectedEvent.availablePasses} passes available!`); return; }
-        if (selectedEvent.ticketPrice > 0 && !paymentConfirmed) { toast.error('Please confirm you have completed the payment'); return; }
+        if (selectedEvent.ticketPrice > 0) {
+            if (!customerUpiId.trim() || customerUpiId.trim().length < 4) {
+                toast.error('Please enter your valid UPI ID (e.g., name@upi or payment reference)');
+                return;
+            }
+            if (!paymentConfirmed) {
+                toast.error('Please confirm you have completed the payment transaction');
+                return;
+            }
+        }
 
         setIsBooking(true);
         const passCode = generatePassCode();
+        const initialStatus = selectedEvent.ticketPrice > 0 ? 'PENDING_APPROVAL' : 'CONFIRMED';
+        const totalPaidAmount = selectedEvent.ticketPrice * passes;
+
         try {
             await apiClient.post(`/events/${selectedEvent.id}/passes`, {
                 customerName: guestName.trim(),
@@ -174,7 +188,9 @@ export default function CustomerEventsPage() {
                 numberOfPasses: passes,
                 tableNumber: tableNumber.trim() || undefined,
                 passCode,
-                totalPaid: selectedEvent.ticketPrice * passes,
+                totalPaid: totalPaidAmount,
+                upiId: customerUpiId.trim(),
+                status: initialStatus
             }).catch(() => null);
 
             saveEventGuest({
@@ -185,10 +201,17 @@ export default function CustomerEventsPage() {
                 passCode,
                 passesCount: passes,
                 tableNumber: tableNumber.trim() || 'General Entry',
-                membershipTier: 'GOLD VIP'
+                membershipTier: 'GOLD VIP',
+                upiId: customerUpiId.trim(),
+                totalPaid: totalPaidAmount,
+                status: initialStatus
             });
 
-            toast.success(`🎉 Passes Booked! Pass code: ${passCode}`, { duration: 5000 });
+            if (selectedEvent.ticketPrice > 0) {
+                toast.success(`💳 Payment submitted! Pass code: ${passCode}. Ticket pending Manager/Admin approval.`, { duration: 6000 });
+            } else {
+                toast.success(`🎉 Free Pass Issued! Pass code: ${passCode}`, { duration: 5000 });
+            }
             setBookingModal(false);
             setTimeout(() => navigate('/customer/event-passes'), 1000);
         } catch {
@@ -200,9 +223,16 @@ export default function CustomerEventsPage() {
                 passCode,
                 passesCount: passes,
                 tableNumber: tableNumber.trim() || 'General Entry',
-                membershipTier: 'GOLD VIP'
+                membershipTier: 'GOLD VIP',
+                upiId: customerUpiId.trim(),
+                totalPaid: totalPaidAmount,
+                status: initialStatus
             });
-            toast.success(`🎉 Booking confirmed! Pass code: ${passCode}`);
+            if (selectedEvent.ticketPrice > 0) {
+                toast.success(`💳 Payment submitted! Pass code: ${passCode}. Pending Manager approval.`);
+            } else {
+                toast.success(`🎉 Booking confirmed! Pass code: ${passCode}`);
+            }
             setBookingModal(false);
             setTimeout(() => navigate('/customer/event-passes'), 1000);
         } finally { setIsBooking(false); }
@@ -674,13 +704,29 @@ export default function CustomerEventsPage() {
                                             <span className="text-xl font-black text-amber-400">${(selectedEvent.ticketPrice * passes).toFixed(2)}</span>
                                         </div>
 
-                                        <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between text-[11px]">
-                                            <span className="text-slate-400">UPI ID: <strong className="text-white">{paymentSettings.upiId}</strong></span>
-                                            <label className="flex items-center gap-2 cursor-pointer font-bold text-emerald-400">
+                                        <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2">
+                                            <p className="text-[11px] text-slate-400">Pay to Venue UPI ID: <strong className="text-amber-400">{paymentSettings.upiId}</strong></p>
+                                            
+                                            <div>
+                                                <label className="block text-slate-300 font-bold text-[11px] mb-1">Enter Your Payment UPI ID / Reference ID *</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. john.doe@okicici or transaction ref 982341"
+                                                    value={customerUpiId}
+                                                    onChange={e => setCustomerUpiId(e.target.value)}
+                                                    className="w-full p-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white font-mono text-xs font-bold outline-none focus:border-amber-500 placeholder:text-slate-600"
+                                                />
+                                            </div>
+
+                                            <label className="flex items-center gap-2 cursor-pointer font-bold text-emerald-400 pt-1">
                                                 <input type="checkbox" checked={paymentConfirmed} onChange={e => setPaymentConfirmed(e.target.checked)} className="w-4 h-4 accent-emerald-500 rounded" />
-                                                Payment Completed
+                                                I confirm I have transferred payment via UPI
                                             </label>
                                         </div>
+                                        
+                                        <p className="text-[10px] text-purple-300 font-medium bg-purple-500/10 border border-purple-500/20 p-2 rounded-xl">
+                                            ℹ️ Payment will be verified by venue Manager / Admin before ticket QR pass is activated.
+                                        </p>
                                     </div>
                                 )}
 

@@ -147,6 +147,46 @@ export default function CustomerProfilePage() {
                                 />
                             </div>
                         </div>
+                        <div>
+                            <label className="block text-slate-400 mb-1.5 font-bold">Date of Birth</label>
+                            <input 
+                                disabled={!isEditing}
+                                type="date" 
+                                value={profile.dateOfBirth}
+                                onChange={e => setProfile({...profile, dateOfBirth: e.target.value})}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none font-bold disabled:opacity-70"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 mb-1.5 font-bold">Preferred Seating & Dining Area</label>
+                            <select
+                                disabled={!isEditing}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none font-bold disabled:opacity-70"
+                            >
+                                <option>🎷 Sunset Rooftop Lounge</option>
+                                <option>🍷 Main Fine Dining Hall</option>
+                                <option>🍸 Counter Bar Section</option>
+                                <option>💼 Executive VIP Suite</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 mb-1.5 font-bold">Dietary Choice & Allergies</label>
+                            <input 
+                                disabled={!isEditing}
+                                type="text" 
+                                defaultValue="Vegetarian / Nut Allergy Alert"
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none font-bold disabled:opacity-70"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 mb-1.5 font-bold">Anniversary / Special Date</label>
+                            <input 
+                                disabled={!isEditing}
+                                type="date" 
+                                defaultValue="2024-11-20"
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none font-bold disabled:opacity-70"
+                            />
+                        </div>
                     </div>
 
                     {isEditing && (

@@ -18,7 +18,7 @@ public class AttendanceController {
     private final AttendanceRepository attendanceRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<List<Attendance>> getAttendance(
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
@@ -28,7 +28,7 @@ public class AttendanceController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<Attendance> logAttendance(@RequestBody Attendance attendance) {
         return ResponseEntity.ok(attendanceRepository.save(attendance));
     }

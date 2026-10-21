@@ -17,19 +17,19 @@ public class TeamController {
     private final TeamRepository teamRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<List<Team>> getAllTeams() {
         return ResponseEntity.ok(teamRepository.findAll());
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<Team> createTeam(@RequestBody Team team) {
         return ResponseEntity.ok(teamRepository.save(team));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<Team> updateTeam(@PathVariable Long id, @RequestBody Team updated) {
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Team not found"));
@@ -39,7 +39,7 @@ public class TeamController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER', 'DEVELOPER')")
     public ResponseEntity<Void> deleteTeam(@PathVariable Long id) {
         teamRepository.deleteById(id);
         return ResponseEntity.noContent().build();

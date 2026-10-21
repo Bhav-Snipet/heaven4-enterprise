@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, ArrowRight, Loader2, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/core/auth/AuthProvider';
 import apiClient from '@/core/api/client';
 import toast from 'react-hot-toast';
-import { preloadAllWorkspaces } from '@/app/Router';
+import { preloadWorkspace } from '@/app/Router';
 
 export default function LoginScreen() {
     const [step, setStep] = useState<'phone' | 'otp' | 'blocked'>('phone');
@@ -15,10 +15,10 @@ export default function LoginScreen() {
     const { login } = useAuth();
     const navigate = useNavigate();
 
-    // Trigger silent background pre-loading of all workspace modules as soon as login page loads
-    useEffect(() => {
-        preloadAllWorkspaces();
-    }, []);
+    // Preload customer workspace as soon as user interacts with input
+    const handleInteraction = () => {
+        preloadWorkspace('CUSTOMER');
+    };
 
     // ── Developer backdoor credentials (always works, no backend needed) ──
     const DEVELOPER_PHONE = '9999999999';
@@ -97,21 +97,24 @@ export default function LoginScreen() {
                 localStorage.setItem('isDeveloperMode', 'true');
             }
 
+            const ws = data.workspace || 'CUSTOMER';
+            preloadWorkspace(ws);
             login(data.accessToken, data.refreshToken, {
                 id: data.userId,
                 displayName: data.displayName || 'Customer Guest',
                 role: data.role || 'CUSTOMER',
-                workspace: data.workspace || 'CUSTOMER'
+                workspace: ws
             });
 
             toast.success("Welcome to Heaven4!");
-            navigate(`/${(data.workspace || 'customer').toLowerCase()}`);
+            navigate(`/${ws.toLowerCase()}`);
 
         } catch (error: any) {
             if (error?.response?.data?.message === 'ACCOUNT_BLOCKED') {
                 setStep('blocked');
             } else {
                 // Regular customer offline fallback
+                preloadWorkspace('CUSTOMER');
                 login('mock_token_' + Date.now(), 'mock_refresh', {
                     id: Math.floor(Date.now() % 100000),
                     displayName: `Guest (${phone.slice(-4)})`,
@@ -247,7 +250,12 @@ export default function LoginScreen() {
                                         <input
                                             type="tel"
                                             value={phone}
-                                            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                                            onFocus={handleInteraction}
+                                            onMouseEnter={handleInteraction}
+                                            onChange={(e) => {
+                                                handleInteraction();
+                                                setPhone(e.target.value.replace(/\D/g, ''));
+                                            }}
                                             className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-heaven-500/50 transition-all"
                                             placeholder="Enter your phone number"
                                             disabled={isLoading}
