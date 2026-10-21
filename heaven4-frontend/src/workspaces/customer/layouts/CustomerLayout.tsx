@@ -78,19 +78,11 @@ export default function CustomerLayout() {
           </Link>
           
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <Link to="/customer/order-status" className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-sm">
-              <Clock className="w-3.5 h-3.5 text-blue-400" />
-              <span>Track Order</span>
-            </Link>
-            <Link to="/customer/complaint" className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-300 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-sm">
-              <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-              <span>Raise Complaint</span>
-            </Link>
-            <Link to="/customer/membership" className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors cursor-pointer text-xs font-medium text-slate-300">
-              <Crown className="w-3.5 h-3.5 text-yellow-400" />
+            <Link to="/customer/membership" className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/30 rounded-full px-3.5 py-1.5 hover:bg-amber-500/20 transition-all cursor-pointer text-xs font-bold text-amber-300 shadow-sm">
+              <Crown className="w-4 h-4 text-amber-400" />
               <span>VIP</span>
             </Link>
-            <Link to="/customer/profile" className="hidden md:flex items-center gap-1 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors cursor-pointer text-xs font-medium text-slate-300">
+            <Link to="/customer/profile" className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors cursor-pointer text-xs font-medium text-slate-300">
               <User className="w-3.5 h-3.5 text-heaven-400" />
               <span>{user?.displayName || 'Guest'}</span>
             </Link>
